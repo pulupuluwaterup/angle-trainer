@@ -473,7 +473,7 @@
 
       body.is-entering { --focused-graphic-height: 135px; }
       .is-entering .app { width: calc(100% - 20px); padding: 8px 0; }
-      .is-entering .topbar, .is-entering .view-nav, .is-entering .toolbar, .is-entering .footer,
+      .is-entering .topbar, .is-entering .footer,
       .is-entering .prompt p, .is-entering .stage-note,
       .is-entering .answer-heading, .is-entering .answer-subtitle,
       .is-entering .input-label, .is-entering .input-range,
@@ -482,6 +482,9 @@
       .is-entering .list-header, .is-entering .angle-list,
       .is-entering .lightness-scale-wrap { display: none; }
       .is-entering .workspace { gap: 8px; }
+      .is-entering .view-nav { margin-bottom: 8px; }
+      .is-entering .toolbar { padding: 6px 10px; }
+      .is-entering .toolbar .mode-button { padding: 5px 10px; font-size: 11px; }
       .is-entering .stage { margin: 0 8px 8px; border-radius: 12px; }
       .is-entering .prompt { padding: 8px 10px 0; }
       .is-entering .prompt h2 { margin: 0; font-size: 14px; }
@@ -494,6 +497,33 @@
       .is-entering .degree-symbol { top: 14px; right: 20px; font-size: 21px; }
       .is-entering .input-error { min-height: 14px; margin: 3px 0; font-size: 10px; }
       .is-entering .submit-button { min-height: 40px; padding: 9px 14px; }
+
+      body.is-question { --question-graphic-height: 200px; }
+      .is-question .app { width: calc(100% - 20px); padding: 8px 0; }
+      .is-question .topbar, .is-question .footer,
+      .is-question .prompt p, .is-question .stage-note,
+      .is-question .answer-heading, .is-question .answer-subtitle,
+      .is-question .input-label, .is-question .input-range,
+      .is-question .coach-tip, .is-question .feedback,
+      .is-question .quick-label, .is-question .quick-angles,
+      .is-question .list-header, .is-question .angle-list,
+      .is-question .lightness-scale-wrap { display: none; }
+      .is-question .view-nav { margin-bottom: 8px; }
+      .is-question .toolbar { padding: 6px 10px; }
+      .is-question .toolbar .mode-button { padding: 5px 10px; font-size: 11px; }
+      .is-question .workspace { gap: 8px; }
+      .is-question .stage { margin: 0 8px 8px; border-radius: 12px; }
+      .is-question .prompt { padding: 8px 10px 0; }
+      .is-question .prompt h2 { margin: 0; font-size: 14px; }
+      .is-question .angle-svg { height: var(--question-graphic-height); }
+      .is-question .color-display { height: var(--question-graphic-height); margin: 8px; }
+      .is-question .value-swatch { height: 100%; }
+      .is-question .lightness-answer-column { display: none; }
+      .is-question .answer-card { padding: 10px 12px; border-radius: 14px; }
+      .is-question .degree-input { height: 54px; padding: 5px 38px 5px 20px; font-size: 30px; }
+      .is-question .degree-symbol { top: 14px; right: 20px; font-size: 21px; }
+      .is-question .input-error { min-height: 14px; margin: 3px 0; font-size: 10px; }
+      .is-question .submit-button { min-height: 40px; padding: 9px 14px; }
 
       body.is-result { --result-graphic-height: 220px; }
       .is-result .app { width: calc(100% - 20px); padding: 8px 0; }
@@ -1157,8 +1187,9 @@
       const focusTargets = { practice: "answerInput", reference: "customAngleInput", color: "lightnessInput" };
 
       function switchView(view) {
-        document.body.classList.remove("is-entering", "is-result");
+        document.body.classList.remove("is-entering", "is-question", "is-result");
         document.body.style.removeProperty("--focused-graphic-height");
+        document.body.style.removeProperty("--question-graphic-height");
         document.body.style.removeProperty("--result-graphic-height");
         Object.entries(views).forEach(([name, element]) => { element.hidden = name !== view; });
         document.querySelectorAll(".view-nav-button").forEach((button) => {
@@ -1467,24 +1498,42 @@
       let activeInput = null;
 
       function scrollToGraphic() {
-        const card = activeInput?.closest(".workspace")?.querySelector(".practice-card");
-        card?.scrollIntoView({ block: "start", behavior: "auto" });
+        document.querySelector(".app").scrollIntoView({ block: "start", behavior: "auto" });
       }
 
       function updateFocusLayout() {
         if (!document.body.classList.contains("is-entering")) return;
         const availableHeight = viewport?.height || window.innerHeight;
-        const graphicHeight = Math.max(85, Math.min(145, availableHeight - 250));
+        const graphicHeight = Math.max(75, Math.min(145, availableHeight - 300));
         document.body.style.setProperty("--focused-graphic-height", `${graphicHeight}px`);
       }
 
       function enterFocusMode(input) {
         if (!mobile.matches) return;
         activeInput = input;
-        document.body.classList.remove("is-result");
+        document.body.classList.remove("is-question", "is-result");
+        document.body.style.removeProperty("--question-graphic-height");
         document.body.style.removeProperty("--result-graphic-height");
         document.body.classList.add("is-entering");
         updateFocusLayout();
+        requestAnimationFrame(scrollToGraphic);
+      }
+
+      function updateQuestionLayout() {
+        if (!document.body.classList.contains("is-question")) return;
+        const availableHeight = viewport?.height || window.innerHeight;
+        const graphicHeight = Math.max(100, Math.min(220, availableHeight - 360));
+        document.body.style.setProperty("--question-graphic-height", `${graphicHeight}px`);
+      }
+
+      function enterQuestionMode() {
+        if (!mobile.matches) return;
+        activeInput = null;
+        document.body.classList.remove("is-entering", "is-result");
+        document.body.style.removeProperty("--focused-graphic-height");
+        document.body.style.removeProperty("--result-graphic-height");
+        document.body.classList.add("is-question");
+        updateQuestionLayout();
         requestAnimationFrame(scrollToGraphic);
       }
 
@@ -1498,8 +1547,9 @@
       function enterResultMode() {
         if (!mobile.matches) return;
         activeInput = null;
-        document.body.classList.remove("is-entering");
+        document.body.classList.remove("is-entering", "is-question");
         document.body.style.removeProperty("--focused-graphic-height");
+        document.body.style.removeProperty("--question-graphic-height");
         document.body.classList.add("is-result");
         updateResultLayout();
         requestAnimationFrame(() => document.querySelector(".app").scrollIntoView({ block: "start", behavior: "auto" }));
@@ -1513,8 +1563,9 @@
 
       function exitModes() {
         activeInput = null;
-        document.body.classList.remove("is-entering", "is-result");
+        document.body.classList.remove("is-entering", "is-question", "is-result");
         document.body.style.removeProperty("--focused-graphic-height");
+        document.body.style.removeProperty("--question-graphic-height");
         document.body.style.removeProperty("--result-graphic-height");
       }
 
@@ -1539,7 +1590,7 @@
               input.blur();
               enterResultMode();
             } else if (isAnswerForm) {
-              if (mobile.matches) exitModes();
+              if (mobile.matches) enterQuestionMode();
             } else {
               if (mobile.matches) input.blur();
               exitModes();
@@ -1551,6 +1602,11 @@
       viewport?.addEventListener("resize", () => {
         if (document.body.classList.contains("is-result")) {
           updateResultLayout();
+          return;
+        }
+        if (document.body.classList.contains("is-question")) {
+          updateQuestionLayout();
+          requestAnimationFrame(scrollToGraphic);
           return;
         }
         if (!activeInput) return;
