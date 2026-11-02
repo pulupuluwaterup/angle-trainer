@@ -79,6 +79,19 @@
     .stat-label { display: block; margin-bottom: 3px; color: var(--muted); font-size: 11px; }
     .stat-value { font-size: 25px; font-weight: 650; line-height: 1.15; }
     .stat-unit { margin-left: 3px; color: var(--muted); font-size: 12px; font-weight: 450; }
+    .answer-card > .stats {
+      gap: 8px;
+      width: 100%;
+      margin: 15px 0 14px;
+      padding: 12px 0;
+      border-top: 1px solid var(--soft-border);
+      border-bottom: 1px solid var(--soft-border);
+    }
+    .answer-card .stat { flex: 1; min-width: 0; }
+    .answer-card .stat + .stat { padding-left: 10px; }
+    .answer-card .stat-label { font-size: 10px; }
+    .answer-card .stat-value { font-size: 20px; }
+    .answer-card .stat-unit { font-size: 10px; }
 
     .workspace {
       display: grid;
@@ -473,7 +486,7 @@
 
       body.is-entering { --focused-graphic-height: 135px; }
       .is-entering .app { width: calc(100% - 20px); padding: 8px 0; }
-      .is-entering .topbar, .is-entering .footer,
+      .is-entering .topbar, .is-entering .stats, .is-entering .footer,
       .is-entering .prompt p, .is-entering .stage-note,
       .is-entering .answer-heading, .is-entering .answer-subtitle,
       .is-entering .input-label, .is-entering .input-range,
@@ -500,7 +513,7 @@
 
       body.is-question { --question-graphic-height: 200px; }
       .is-question .app { width: calc(100% - 20px); padding: 8px 0; }
-      .is-question .topbar, .is-question .footer,
+      .is-question .topbar, .is-question .stats, .is-question .footer,
       .is-question .prompt p, .is-question .stage-note,
       .is-question .answer-heading, .is-question .answer-subtitle,
       .is-question .input-label, .is-question .input-range,
@@ -527,7 +540,7 @@
 
       body.is-result { --result-graphic-height: 220px; }
       .is-result .app { width: calc(100% - 20px); padding: 8px 0; }
-      .is-result .topbar, .is-result .toolbar, .is-result .footer,
+      .is-result .topbar, .is-result .stats, .is-result .toolbar, .is-result .footer,
       .is-result .prompt p, .is-result .stage-note,
       .is-result .answer-heading, .is-result .answer-subtitle,
       .is-result .input-label, .is-result .input-range, .is-result .input-wrap,
@@ -574,21 +587,6 @@
           <p>EYE TRAINING</p>
         </div>
       </div>
-
-      <section class="stats" id="practiceStats" aria-label="本轮练习统计">
-        <div class="stat">
-          <span class="stat-label">已练习</span>
-          <span class="stat-value" id="totalValue">0</span><span class="stat-unit">题</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">平均误差</span>
-          <span class="stat-value" id="averageValue">—</span><span class="stat-unit">°</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">5° 内准确率</span>
-          <span class="stat-value" id="accuracyValue">—</span><span class="stat-unit">%</span>
-        </div>
-      </section>
     </header>
 
     <nav class="view-nav" aria-label="功能界面">
@@ -674,6 +672,21 @@
             <span id="submitLabel">提交判断</span><span class="key-hint">Enter ↵</span>
           </button>
         </form>
+
+        <section class="stats" id="practiceStats" aria-label="本轮练习统计">
+          <div class="stat">
+            <span class="stat-label">已练习</span>
+            <span class="stat-value" id="totalValue">0</span><span class="stat-unit">题</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">平均误差</span>
+            <span class="stat-value" id="averageValue">—</span><span class="stat-unit">°</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">5° 内准确率</span>
+            <span class="stat-value" id="accuracyValue">—</span><span class="stat-unit">%</span>
+          </div>
+        </section>
 
         <div class="feedback" id="feedback" aria-live="polite">
           <div class="feedback-main">
