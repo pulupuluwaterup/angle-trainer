@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f3f2ed">
+  <title>角度眼力 · 临摹观察练习</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f3f2ed;
+      --paper: #fffefa;
+      --stage: #f8f7f2;
+      --ink: #24302a;
+      --muted: #74786f;
+      --border: #dedfd6;
+      --soft-border: #e9e8e0;
+      --accent: #df6842;
+      --accent-soft: #faeae2;
+      --good: #237054;
+      --good-soft: #e9f3ed;
+      --warning: #9a631c;
+      --warning-soft: #f8f0df;
+      --bad: #ad4e40;
+      --bad-soft: #f9eae6;
+      --shadow: 0 12px 36px rgba(35, 43, 37, 0.055);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--page);
+      font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, svg:focus-visible {
+      outline: 3px solid rgba(223, 104, 66, 0.3);
+      outline-offset: 3px;
+    }
+    [hidden] { display: none !important; }
+
+    .app {
+      width: min(1160px, calc(100% - 48px));
+      margin: 0 auto;
+      padding: 30px 0 24px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      margin-bottom: 26px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      background: var(--ink);
+      box-shadow: 0 5px 12px rgba(36, 48, 42, 0.15);
+    }
+    .brand h1 { margin: 0 0 3px; font-size: 20px; letter-spacing: 0.04em; }
+    .brand p { margin: 0; color: var(--muted); font-size: 10px; letter-spacing: 0.19em; }
+
+    .stats { display: flex; align-items: center; gap: 30px; }
+    .stat { min-width: 74px; }
+    .stat + .stat { padding-left: 28px; border-left: 1px solid var(--border); }
+    .stat-label { display: block; margin-bottom: 3px; color: var(--muted); font-size: 11px; }
+    .stat-value { font-size: 25px; font-weight: 650; line-height: 1.15; }
+    .stat-unit { margin-left: 3px; color: var(--muted); font-size: 12px; font-weight: 450; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .practice-card, .answer-card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+    .practice-card { overflow: hidden; }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 22px;
+    }
+
+    .mode-switch {
+      display: flex;
+      gap: 3px;
+      padding: 4px;
+      background: #eeeee7;
+      border-radius: 12px;
+    }
+    .mode-button {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 16px;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-radius: 9px;
+      font-size: 13px;
+      transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+    .mode-button:hover { color: var(--ink); }
+    .mode-button[aria-pressed="true"] {
+      color: var(--ink);
+      background: var(--paper);
+      box-shadow: 0 2px 7px rgba(36, 48, 42, 0.09);
+      font-weight: 600;
+    }
+    .question-number { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+    .stage {
+      margin: 0 22px 22px;
+      overflow: hidden;
+      background: var(--stage);
+      border: 1px solid var(--soft-border);
+      border-radius: 16px;
+    }
+    .prompt { padding: 25px 18px 0; text-align: center; }
+    .prompt h2 { margin: 0 0 8px; font-size: 20px; font-weight: 620; letter-spacing: 0.02em; }
+    .prompt p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+    .angle-svg { display: block; width: 100%; height: auto; }
+    .reference-line { stroke: #c5c8bf; stroke-width: 2; stroke-linecap: round; }
+    .shape-polygon { fill: #eeeee7; stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
+    .ray { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
+    .guide-ray { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: 0.35; }
+    .guide-label {
+      fill: var(--muted);
+      stroke: var(--stage);
+      stroke-width: 3px;
+      paint-order: stroke;
+      font-size: 10px;
+      font-family: inherit;
+    }
+    .vertex { fill: var(--paper); stroke: var(--ink); stroke-width: 2.5; }
+    .vertex.is-target { fill: var(--accent); stroke: var(--paper); }
+    .answer-arc {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 3;
+      stroke-linecap: round;
+      animation: reveal 280ms ease-out;
+    }
+    .svg-caption { fill: var(--muted); font-size: 11px; font-family: inherit; }
+
+    .stage-note {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin: -3px 16px 16px;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+    }
+    .stage-note::before {
+      content: "";
+      flex: 0 0 auto;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .answer-card { display: flex; flex-direction: column; padding: 26px; }
+    .answer-heading { margin: 0; font-size: 14px; font-weight: 650; }
+    .answer-subtitle { margin: 6px 0 21px; color: var(--muted); font-size: 12px; }
+    .input-label { display: block; margin-bottom: 9px; color: var(--muted); font-size: 11px; }
+
+    .input-wrap { position: relative; }
+    .degree-input {
+      width: 100%;
+      height: 94px;
+      padding: 8px 46px 8px 24px;
+      color: var(--ink);
+      background: #fbfaf6;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-size: 48px;
+      font-weight: 560;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      transition: border-color 160ms ease, background 160ms ease;
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+    .degree-input::-webkit-inner-spin-button, .degree-input::-webkit-outer-spin-button {
+      margin: 0;
+      -webkit-appearance: none;
+    }
+    .degree-input:focus { border-color: var(--accent); background: var(--paper); }
+    .degree-input[readonly] { color: var(--muted); background: #f3f2ed; }
+    .degree-input[aria-invalid="true"] { border-color: var(--bad); }
+    .degree-symbol { position: absolute; top: 30px; right: 25px; color: var(--muted); font-size: 26px; pointer-events: none; }
+    .input-range { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 10px; }
+    .input-error { min-height: 19px; margin: 5px 0 3px; color: var(--bad); font-size: 11px; }
+
+    .submit-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 50px;
+      padding: 12px 18px;
+      color: #fff;
+      background: var(--ink);
+      border: 0;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform 150ms ease, background 150ms ease;
+    }
+    .submit-button:hover { background: #35453c; transform: translateY(-1px); }
+    .submit-button:active { transform: translateY(0); }
+    .key-hint { color: #c8d0ca; font-size: 11px; font-weight: 400; }
+
+    .feedback {
+      min-height: 125px;
+      margin-top: 17px;
+      padding: 15px;
+      background: #f4f3ee;
+      border: 1px solid transparent;
+      border-radius: 13px;
+    }
+    .feedback-main { display: flex; align-items: flex-start; gap: 10px; }
+    .feedback-icon {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 23px;
+      height: 23px;
+      margin-top: 1px;
+      color: var(--muted);
+      background: #e4e5dd;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .feedback-title { margin: 1px 0 4px; font-size: 13px; font-weight: 650; }
+    .feedback-text { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .actual-result {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      margin-top: 12px;
+      padding-top: 11px;
+      border-top: 1px solid rgba(36, 48, 42, 0.09);
+    }
+    .actual-label { color: var(--muted); font-size: 11px; }
+    .actual-value { font-size: 25px; font-weight: 700; }
+    .error-value { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .reference-option {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 11px;
+      color: var(--muted);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .reference-option input { width: 14px; height: 14px; margin: 0; accent-color: var(--accent); }
+    .feedback.is-good { background: var(--good-soft); border-color: #d5e8dc; }
+    .feedback.is-good .feedback-icon { color: #fff; background: var(--good); }
+    .feedback.is-good .feedback-title { color: var(--good); }
+    .feedback.is-warning { background: var(--warning-soft); border-color: #eee2c9; }
+    .feedback.is-warning .feedback-icon { color: #fff; background: var(--warning); }
+    .feedback.is-warning .feedback-title { color: var(--warning); }
+    .feedback.is-bad { background: var(--bad-soft); border-color: #efd8d1; }
+    .feedback.is-bad .feedback-icon { color: #fff; background: var(--bad); }
+    .feedback.is-bad .feedback-title { color: var(--bad); }
+
+    .coach-tip { margin-top: auto; padding-top: 21px; }
+    .coach-title { display: flex; align-items: center; gap: 7px; margin: 0 0 7px; font-size: 12px; font-weight: 650; }
+    .coach-title svg { color: var(--accent); }
+    .coach-text { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.75; }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 17px 4px 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .footer p { margin: 0; }
+    .reset-button { padding: 5px 0; color: var(--muted); background: none; border: 0; font-size: 11px; }
+    .reset-button:hover { color: var(--bad); }
+
+    .view-nav {
+      display: flex;
+      gap: 4px;
+      width: max-content;
+      max-width: 100%;
+      margin-bottom: 18px;
+      padding: 4px;
+      background: #e8e8e1;
+      border-radius: 12px;
+    }
+    .view-nav-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 17px;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-radius: 9px;
+      font-size: 12px;
+    }
+    .view-nav-button[aria-pressed="true"] {
+      color: var(--ink);
+      background: var(--paper);
+      box-shadow: 0 2px 7px rgba(36, 48, 42, 0.09);
+      font-weight: 600;
+    }
+    .reference-count { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .reference-degree-input { height: 78px; font-size: 40px; }
+    .reference-degree-symbol { top: 22px; }
+    .submit-button:disabled, .quick-angle-button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .quick-label { margin: 18px 0 8px; color: var(--muted); font-size: 11px; }
+    .quick-angles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+    .quick-angle-button {
+      padding: 7px 5px;
+      color: var(--ink);
+      background: #f3f2ed;
+      border: 1px solid var(--soft-border);
+      border-radius: 8px;
+      font-size: 11px;
+    }
+    .quick-angle-button:hover { background: var(--accent-soft); border-color: #edcfc0; }
+    .list-header { display: flex; align-items: center; justify-content: space-between; margin-top: 21px; }
+    .list-header h3 { margin: 0; font-size: 12px; font-weight: 650; }
+    .clear-list-button { padding: 3px 0; color: var(--muted); background: none; border: 0; font-size: 10px; }
+    .clear-list-button:hover:not(:disabled) { color: var(--bad); }
+    .clear-list-button:disabled { opacity: 0.4; cursor: default; }
+    .angle-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+    .angle-chip {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      padding: 7px 7px 7px 9px;
+      background: #f5f4ef;
+      border-radius: 8px;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+    .angle-chip-swatch { flex: 0 0 auto; width: 15px; height: 3px; border-radius: 3px; background: var(--chip-color); }
+    .angle-chip-value { flex: 1; }
+    .angle-chip-delete {
+      display: grid;
+      place-items: center;
+      width: 21px;
+      height: 21px;
+      padding: 0;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-radius: 5px;
+      font-size: 15px;
+      line-height: 1;
+    }
+    .angle-chip-delete:hover { color: var(--bad); background: var(--bad-soft); }
+    .empty-angle-list { grid-column: 1 / -1; margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+    .custom-angle-group line { transition: stroke-width 140ms ease; }
+    .custom-angle-group:hover line, .custom-angle-group:focus line { stroke-width: 4; }
+    .custom-angle-group:focus { outline: none; }
+    .custom-angle-label {
+      fill: var(--ink);
+      stroke: var(--stage);
+      stroke-width: 4px;
+      paint-order: stroke;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .color-display { display: flex; align-items: stretch; gap: 12px; margin: 23px 22px 18px; }
+    .value-swatch {
+      flex: 1;
+      min-width: 0;
+      height: 285px;
+      border: 1px solid rgba(36, 48, 42, 0.1);
+      border-radius: 14px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    }
+    .lightness-answer-column {
+      display: grid;
+      grid-template-rows: repeat(10, 1fr);
+      gap: 4px;
+      flex: 0 0 84px;
+      width: 84px;
+    }
+    .lightness-step { display: grid; grid-template-columns: 27px 1fr; align-items: center; gap: 5px; color: var(--muted); font-size: 9px; }
+    .lightness-step-color { height: 100%; min-height: 0; border: 1px solid rgba(36, 48, 42, 0.09); border-radius: 4px; }
+    .lightness-step.is-actual { color: var(--ink); font-weight: 700; }
+    .lightness-step.is-actual .lightness-step-color { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .lightness-scale-wrap { margin: 0 22px 20px; }
+    .lightness-scale {
+      height: 10px;
+      background: linear-gradient(90deg, #000, #fff);
+      border: 1px solid rgba(36, 48, 42, 0.12);
+      border-radius: 8px;
+    }
+    .lightness-scale-labels { display: flex; justify-content: space-between; margin-top: 6px; color: var(--muted); font-size: 10px; }
+    .color-stats-note { margin-top: 12px; color: var(--muted); font-size: 11px; }
+
+    @keyframes reveal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 1fr; }
+      .answer-card { min-height: 0; }
+      .coach-tip { margin-top: 20px; }
+      .degree-input { height: 84px; }
+      .degree-symbol { top: 25px; }
+    }
+
+    @media (max-width: 600px) {
+      .app { width: calc(100% - 28px); padding: 20px 0; }
+      .topbar { flex-direction: column; align-items: stretch; gap: 20px; margin-bottom: 20px; }
+      .stats { justify-content: space-between; gap: 12px; }
+      .view-nav { width: 100%; }
+      .view-nav-button { flex: 1; padding: 8px 5px; font-size: 11px; }
+      .view-nav-button svg { display: none; }
+      .color-display { margin: 18px 12px 14px; gap: 8px; }
+      .value-swatch { height: 180px; }
+      .lightness-answer-column { flex-basis: 69px; width: 69px; gap: 3px; }
+      .lightness-step { grid-template-columns: 24px 1fr; gap: 4px; font-size: 8px; }
+      .lightness-scale-wrap { margin: 0 12px 16px; }
+      .stat { flex: 1; min-width: 0; }
+      .stat + .stat { padding-left: 18px; }
+      .stat-value { font-size: 23px; }
+      .toolbar { padding: 14px; }
+      .mode-button { padding: 8px 12px; }
+      .mode-button svg { display: none; }
+      .stage { margin: 0 12px 12px; }
+      .prompt { padding: 21px 12px 0; }
+      .prompt h2 { font-size: 18px; }
+      .prompt p { font-size: 11px; }
+      .stage-note { margin-bottom: 13px; }
+      .answer-card { padding: 22px; }
+      .footer p { max-width: 210px; line-height: 1.5; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M5 22H24M5 22L20 5" stroke="#fffefa" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M14 22C14 17.6 12.2 14.6 9.4 12.8" stroke="#ef8a67" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1>角度眼力</h1>
+          <p>ANGLE TRAINING</p>
+        </div>
+      </div>
+
+      <section class="stats" id="practiceStats" aria-label="本轮练习统计">
+        <div class="stat">
+          <span class="stat-label">已练习</span>
+          <span class="stat-value" id="totalValue">0</span><span class="stat-unit">题</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">平均误差</span>
+          <span class="stat-value" id="averageValue">—</span><span class="stat-unit">°</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">5° 内准确率</span>
+          <span class="stat-value" id="accuracyValue">—</span><span class="stat-unit">%</span>
+        </div>
+      </section>
+    </header>
+
+    <nav class="view-nav" aria-label="功能界面">
+      <button class="view-nav-button" type="button" data-view="practice" aria-pressed="true">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 16H17M3 16L14 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        角度练习
+      </button>
+      <button class="view-nav-button" type="button" data-view="reference" aria-pressed="false">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 16H17M10 16V4M10 16L16 6M10 16L4 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        角度参考
+      </button>
+      <button class="view-nav-button" type="button" data-view="color" aria-pressed="false">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="13" r="4" stroke="currentColor" stroke-width="1.5"/></svg>
+        色感练习
+      </button>
+    </nav>
+
+    <main class="workspace" id="practiceView">
+      <section class="practice-card" aria-labelledby="questionTitle">
+        <div class="toolbar">
+          <div class="mode-switch" role="group" aria-label="练习模式">
+            <button class="mode-button" type="button" data-mode="line" aria-pressed="true">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M3 16L17 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              线模式
+            </button>
+            <button class="mode-button" type="button" data-mode="angle" aria-pressed="false">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M3 16H17M3 16L14 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              角模式
+            </button>
+            <button class="mode-button" type="button" data-mode="shape" aria-pressed="false">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M10 2.8L17 8L14.3 16.5H5.7L3 8L10 2.8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              </svg>
+              图形模式
+            </button>
+          </div>
+          <span class="question-number" id="questionNumber">第 1 题</span>
+        </div>
+
+        <div class="stage">
+          <div class="prompt">
+            <h2 id="questionTitle">这条线倾斜了多少度？</h2>
+            <p id="questionHint">默认判断小角，也可以判断大角；两个角相加为 180°</p>
+          </div>
+
+          <svg class="angle-svg" id="angleSvg" viewBox="0 0 640 380" role="img" aria-labelledby="svgTitle svgDesc">
+            <title id="svgTitle">线条倾角练习题</title>
+            <desc id="svgDesc">灰色水平参考线与黑色直线组成一个待估计的角度。</desc>
+            <line id="referenceLine" class="reference-line" x1="110" y1="204" x2="530" y2="204" vector-effect="non-scaling-stroke"/>
+            <polygon id="shapePolygon" class="shape-polygon" points="" vector-effect="non-scaling-stroke" hidden/>
+            <g id="referenceGuide" aria-hidden="true" hidden>
+              <line id="guideRay" class="guide-ray" x1="320" y1="204" x2="320" y2="204" vector-effect="non-scaling-stroke"/>
+              <text id="guideLabel" class="guide-label" x="0" y="0" text-anchor="middle"></text>
+            </g>
+            <line id="rayA" class="ray" x1="320" y1="204" x2="530" y2="204" vector-effect="non-scaling-stroke"/>
+            <line id="rayB" class="ray" x1="320" y1="204" x2="490" y2="204" vector-effect="non-scaling-stroke" hidden/>
+            <path id="answerArc" class="answer-arc" d="" vector-effect="non-scaling-stroke" hidden/>
+            <circle id="vertex" class="vertex" cx="320" cy="204" r="5" vector-effect="non-scaling-stroke"/>
+            <text id="referenceCaption" class="svg-caption" x="320" y="236" text-anchor="middle">水平参考线</text>
+          </svg>
+
+          <div class="stage-note" id="stageNote">小角 + 大角 = 180°，任选其一判断</div>
+        </div>
+      </section>
+
+      <aside class="answer-card">
+        <h2 class="answer-heading">你的目测</h2>
+        <p class="answer-subtitle">相信第一眼，不必精确计算</p>
+
+        <form id="answerForm" novalidate>
+          <label class="input-label" for="answerInput">输入估计角度</label>
+          <div class="input-wrap">
+            <input class="degree-input" id="answerInput" type="number" min="0" max="180" step="1" inputmode="decimal" autocomplete="off" placeholder="?" aria-describedby="inputError">
+            <span class="degree-symbol" aria-hidden="true">°</span>
+          </div>
+          <div class="input-range" aria-hidden="true"><span>0°</span><span>180°</span></div>
+          <p class="input-error" id="inputError" role="alert"></p>
+          <button class="submit-button" id="submitButton" type="submit">
+            <span id="submitLabel">提交判断</span><span class="key-hint">Enter ↵</span>
+          </button>
+        </form>
+
+        <div class="feedback" id="feedback" aria-live="polite">
+          <div class="feedback-main">
+            <span class="feedback-icon" id="feedbackIcon" aria-hidden="true">◎</span>
+            <div>
+              <p class="feedback-title" id="feedbackTitle">准备好就开始</p>
+              <p class="feedback-text" id="feedbackText">每次判断后，会显示实际角度和你的误差。</p>
+            </div>
+          </div>
+          <div class="actual-result" id="actualResult" hidden>
+            <span class="actual-label">实际角度</span>
+            <strong class="actual-value" id="actualValue">0°</strong>
+            <span class="error-value" id="errorValue"></span>
+          </div>
+          <label class="reference-option" id="referenceOption" hidden>
+            <input id="showReference" type="checkbox">
+            <span>显示最近参考线（<span id="referenceAngleLabel">—</span>）</span>
+          </label>
+        </div>
+
+        <div class="coach-tip">
+          <p class="coach-title">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 2V4M10 16V18M2 10H4M16 10H18M4.35 4.35L5.75 5.75M14.25 14.25L15.65 15.65M15.65 4.35L14.25 5.75M5.75 14.25L4.35 15.65" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="10" cy="10" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+            临摹小方法
+          </p>
+          <p class="coach-text" id="coachText">先看黑线更靠近哪一侧水平线，再判断小角；想判断大角，就用 180° 减去小角。</p>
+        </div>
+      </aside>
+    </main>
+
+    <main class="workspace" id="referenceView" hidden>
+      <section class="practice-card" aria-labelledby="customReferenceTitle">
+        <div class="toolbar">
+          <h2 class="answer-heading" id="customReferenceTitle">自定义角度参考</h2>
+          <span class="reference-count"><span id="customAngleCount">0</span> / 8 条</span>
+        </div>
+        <div class="stage">
+          <div class="prompt">
+            <h2>从水平方向观察角度</h2>
+            <p>右侧水平线为 0°，沿逆时针方向绘制参考线</p>
+          </div>
+          <svg class="angle-svg" id="customReferenceSvg" viewBox="0 0 640 420" role="img" aria-labelledby="customSvgTitle customSvgDesc">
+            <title id="customSvgTitle">自定义角度参考线</title>
+            <desc id="customSvgDesc">从水平方向起算的自定义角度，最多显示八条参考线。</desc>
+            <line class="reference-line" x1="110" y1="220" x2="530" y2="220" vector-effect="non-scaling-stroke"/>
+            <text class="svg-caption" x="548" y="244" text-anchor="middle">0°</text>
+            <text class="svg-caption" x="92" y="244" text-anchor="middle">180°</text>
+            <text id="customEmptyText" class="svg-caption" x="320" y="112" text-anchor="middle">添加一个角度，开始对比</text>
+            <g id="customLines"></g>
+            <circle class="vertex" cx="320" cy="220" r="5" vector-effect="non-scaling-stroke"/>
+            <text class="svg-caption" x="320" y="248" text-anchor="middle">水平参考线</text>
+          </svg>
+          <div class="stage-note">右侧 0° · 上方 90° · 左侧 180°</div>
+        </div>
+      </section>
+
+      <aside class="answer-card">
+        <h2 class="answer-heading">添加参考线</h2>
+        <p class="answer-subtitle">输入度数，画出对应方向</p>
+        <form id="customAngleForm" novalidate>
+          <label class="input-label" for="customAngleInput">角度</label>
+          <div class="input-wrap">
+            <input class="degree-input reference-degree-input" id="customAngleInput" type="number" min="0" max="180" step="0.1" inputmode="decimal" autocomplete="off" placeholder="45" aria-describedby="customAngleError">
+            <span class="degree-symbol reference-degree-symbol" aria-hidden="true">°</span>
+          </div>
+          <div class="input-range" aria-hidden="true"><span>0°</span><span>180°</span></div>
+          <p class="input-error" id="customAngleError" role="alert"></p>
+          <button class="submit-button" id="customAddButton" type="submit">添加线条</button>
+        </form>
+
+        <p class="quick-label">常用角度</p>
+        <div class="quick-angles" role="group" aria-label="快速添加常用角度">
+          <button class="quick-angle-button" type="button" data-custom-angle="30">30°</button>
+          <button class="quick-angle-button" type="button" data-custom-angle="45">45°</button>
+          <button class="quick-angle-button" type="button" data-custom-angle="60">60°</button>
+          <button class="quick-angle-button" type="button" data-custom-angle="90">90°</button>
+        </div>
+
+        <div class="list-header">
+          <h3>已添加角度</h3>
+          <button class="clear-list-button" id="clearCustomAngles" type="button" disabled>全部清空</button>
+        </div>
+        <div class="angle-list" id="customAngleList">
+          <p class="empty-angle-list">还没有参考线，最多可添加 8 条。</p>
+        </div>
+
+        <div class="coach-tip">
+          <p class="coach-title">参考说明</p>
+          <p class="coach-text">相同角度不会重复添加。颜色只用于区分，具体角度以线条标注和列表为准。</p>
+        </div>
+      </aside>
+    </main>
+
+    <main class="workspace" id="colorView" hidden>
+      <section class="practice-card" aria-labelledby="colorPromptTitle">
+        <div class="toolbar">
+          <div class="mode-switch" role="group" aria-label="色感练习模式">
+            <button class="mode-button" type="button" data-color-mode="color" aria-pressed="true">彩色模式</button>
+            <button class="mode-button" type="button" data-color-mode="gray" aria-pressed="false">灰阶模式</button>
+          </div>
+          <span class="question-number" id="colorQuestionNumber">第 1 题</span>
+        </div>
+        <div class="stage">
+          <div class="prompt">
+            <h2 id="colorPromptTitle">这个颜色的明度是多少？</h2>
+            <p id="colorPromptHint">按 HSL 明度 L 判断：0% 为黑色，100% 为白色</p>
+          </div>
+          <div class="color-display">
+            <div class="lightness-answer-column" id="lightnessAnswerColumn" aria-label="同一色相下的明度参考答案" hidden></div>
+            <div class="value-swatch" id="targetSwatch" role="img" aria-label="待判断明度的目标颜色"></div>
+          </div>
+          <div class="lightness-scale-wrap" aria-hidden="true">
+            <div class="lightness-scale"></div>
+            <div class="lightness-scale-labels"><span>0% 黑</span><span>50%</span><span>100% 白</span></div>
+          </div>
+          <div class="stage-note" id="colorStageNote">忽略色相与鲜艳程度，只判断它看起来有多亮</div>
+        </div>
+      </section>
+
+      <aside class="answer-card">
+        <h2 class="answer-heading">你的判断</h2>
+        <p class="answer-subtitle">输入你估计的明度百分比</p>
+        <form id="colorForm" novalidate>
+          <label class="input-label" for="lightnessInput">明度 L</label>
+          <div class="input-wrap">
+            <input class="degree-input" id="lightnessInput" type="number" min="0" max="100" step="1" inputmode="decimal" autocomplete="off" placeholder="50" aria-describedby="lightnessInputError">
+            <span class="degree-symbol" aria-hidden="true">%</span>
+          </div>
+          <div class="input-range" aria-hidden="true"><span>0%</span><span>100%</span></div>
+          <p class="input-error" id="lightnessInputError" role="alert"></p>
+          <button class="submit-button" id="colorSubmitButton" type="submit"><span id="colorSubmitLabel">提交判断</span></button>
+        </form>
+
+        <div class="feedback" id="colorFeedback" aria-live="polite">
+          <div class="feedback-main">
+            <span class="feedback-icon" id="colorFeedbackIcon" aria-hidden="true">◎</span>
+            <div>
+              <p class="feedback-title" id="colorFeedbackTitle">准备好就开始</p>
+              <p class="feedback-text" id="colorFeedbackText">提交后会显示实际明度和你的误差。</p>
+            </div>
+          </div>
+          <div class="actual-result" id="colorResult" hidden>
+            <span class="actual-label">实际明度</span>
+            <strong class="actual-value" id="lightnessActualValue">—</strong>
+            <span class="error-value" id="lightnessErrorValue"></span>
+          </div>
+        </div>
+
+        <div class="coach-tip">
+          <p class="coach-title">明度小方法</p>
+          <p class="coach-text" id="colorCoachText">先与黑白灰比较，再判断它靠近哪个灰阶。这里的明度使用 HSL 的 L 值，与饱和度是不同的概念。</p>
+          <p class="color-stats-note" id="colorStatsNote">本轮 0 次 · 平均误差 —</p>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="footer" id="practiceFooter">
+      <p>误差不超过 5° 记为一次准确判断。每天几题，慢慢校准眼力。</p>
+      <button class="reset-button" id="resetButton" type="button">清空本轮记录</button>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const elements = {
+        form: $("answerForm"), input: $("answerInput"), inputError: $("inputError"),
+        submitLabel: $("submitLabel"), feedback: $("feedback"), feedbackIcon: $("feedbackIcon"),
+        feedbackTitle: $("feedbackTitle"), feedbackText: $("feedbackText"),
+        actualResult: $("actualResult"), actualValue: $("actualValue"), errorValue: $("errorValue"),
+        total: $("totalValue"), average: $("averageValue"), accuracy: $("accuracyValue"),
+        questionNumber: $("questionNumber"), questionTitle: $("questionTitle"),
+        questionHint: $("questionHint"), stageNote: $("stageNote"), coachText: $("coachText"),
+        svgTitle: $("svgTitle"), svgDesc: $("svgDesc"), referenceLine: $("referenceLine"),
+        referenceCaption: $("referenceCaption"), rayA: $("rayA"), rayB: $("rayB"), answerArc: $("answerArc"),
+        shapePolygon: $("shapePolygon"), vertex: $("vertex"), referenceGuide: $("referenceGuide"),
+        guideRay: $("guideRay"), guideLabel: $("guideLabel"), referenceOption: $("referenceOption"),
+        showReference: $("showReference"), referenceAngleLabel: $("referenceAngleLabel")
+      };
+
+      const state = {
+        mode: "line",
+        actual: 0,
+        baseAngle: 0,
+        shapePoints: [],
+        answered: false,
+        total: 0,
+        totalError: 0,
+        accurate: 0
+      };
+
+      const center = { x: 320, y: 204 };
+      const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+      const pointAt = (angle, radius) => {
+        const radians = angle * Math.PI / 180;
+        return {
+          x: center.x + radius * Math.cos(radians),
+          y: center.y - radius * Math.sin(radians)
+        };
+      };
+      const setRay = (ray, angle, radius) => {
+        const end = pointAt(angle, radius);
+        ray.setAttribute("x2", end.x.toFixed(2));
+        ray.setAttribute("y2", end.y.toFixed(2));
+      };
+      const formatNumber = (value) => Number.isInteger(value) ? String(value) : value.toFixed(1);
+      const REFERENCE_ANGLES = [0, 30, 45, 60, 90, 120, 135, 150, 180];
+      const MODE_COPY = {
+        line: {
+          title: "这条线倾斜了多少度？",
+          hint: "默认判断小角，也可以判断大角；两个角相加为 180°",
+          note: "小角 + 大角 = 180°，任选其一判断",
+          coach: "先看黑线更靠近哪一侧水平线，再判断小角；想判断大角，就用 180° 减去小角。"
+        },
+        angle: {
+          title: "这个角有多少度？",
+          hint: "观察两条黑线之间较小的夹角，范围是 0–180°",
+          note: "先判断锐角、直角还是钝角，再细调",
+          coach: "先用 90° 直角作参照：比它小是锐角，比它大是钝角。再借助 30°、45° 等熟悉的角度细调。"
+        },
+        shape: {
+          title: "这个内角有多少度？",
+          hint: "随机多边形 · 判断橙色圆点标记处的内角",
+          note: "不要受图形旋转影响，专注顶点两边的张开程度",
+          coach: "先把标记角与直角比较，再看两边张开的程度。图形的旋转和边长不会改变内角本身。"
+        }
+      };
+      const normalizeAngle = (angle) => (angle % 360 + 360) % 360;
+
+      function createShapeQuestion() {
+        while (true) {
+          const sides = randomInt(3, 6);
+          const minGap = 22;
+          const weights = Array.from({ length: sides }, () => 0.5 + Math.random());
+          const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+          const scaleX = 0.78 + Math.random() * 0.44;
+          const scaleY = 0.78 + Math.random() * 0.44;
+          const shear = (Math.random() - 0.5) * 0.3;
+          let cursor = Math.random() * 360;
+          const points = weights.map((weight) => {
+            const radians = cursor * Math.PI / 180;
+            const x = Math.cos(radians);
+            const y = Math.sin(radians);
+            cursor += minGap + (360 - minGap * sides) * weight / weightTotal;
+            return { x: (x * scaleX + y * shear) * 100, y: y * scaleY * 100 };
+          });
+
+          const targetIndex = randomInt(0, sides - 1);
+          const target = points[targetIndex];
+          const previous = points[(targetIndex - 1 + sides) % sides];
+          const next = points[(targetIndex + 1) % sides];
+          const nextAngle = normalizeAngle(Math.atan2(next.y - target.y, next.x - target.x) * 180 / Math.PI);
+          const previousAngle = normalizeAngle(Math.atan2(previous.y - target.y, previous.x - target.x) * 180 / Math.PI);
+          const interiorAngle = normalizeAngle(previousAngle - nextAngle);
+          if (interiorAngle < 15 || interiorAngle > 165) continue;
+
+          const relativePoints = points.map((point) => ({ x: point.x - target.x, y: point.y - target.y }));
+          const maxX = Math.max(...relativePoints.map((point) => Math.abs(point.x)));
+          const maxY = Math.max(...relativePoints.map((point) => Math.abs(point.y)));
+          const fit = Math.min(225 / maxX, 132 / maxY);
+          const screenPoints = relativePoints.map((point) => ({
+            x: center.x + point.x * fit,
+            y: center.y - point.y * fit
+          }));
+          return { angle: Math.round(interiorAngle), baseAngle: nextAngle, points: screenPoints };
+        }
+      }
+
+      function prepareReference(startAngle, answerAngle, direction = 1) {
+        let nearest = REFERENCE_ANGLES[0];
+        REFERENCE_ANGLES.forEach((angle) => {
+          if (Math.abs(angle - answerAngle) < Math.abs(nearest - answerAngle)) nearest = angle;
+        });
+        const guideAngle = startAngle + direction * nearest;
+        setRay(elements.guideRay, guideAngle, 185);
+        const labelPoint = pointAt(guideAngle, 202);
+        elements.guideLabel.setAttribute("x", Math.max(55, Math.min(585, labelPoint.x)).toFixed(2));
+        elements.guideLabel.setAttribute("y", Math.max(24, Math.min(356, labelPoint.y)).toFixed(2));
+        elements.guideLabel.textContent = `${nearest}° 参考`;
+        elements.referenceAngleLabel.textContent = `${nearest}°`;
+      }
+
+      function renderQuestion() {
+        const isLine = state.mode === "line";
+        const isAngle = state.mode === "angle";
+        const isShape = state.mode === "shape";
+        elements.referenceLine.toggleAttribute("hidden", !isLine);
+        elements.referenceCaption.toggleAttribute("hidden", !isLine);
+        elements.shapePolygon.toggleAttribute("hidden", !isShape);
+        elements.rayA.toggleAttribute("hidden", isShape);
+        elements.rayB.toggleAttribute("hidden", !isAngle);
+        elements.answerArc.toggleAttribute("hidden", true);
+        elements.referenceGuide.toggleAttribute("hidden", true);
+        elements.answerArc.setAttribute("d", "");
+        elements.vertex.classList.toggle("is-target", isShape);
+        elements.vertex.setAttribute("r", isShape ? "6" : "5");
+
+        if (isLine) {
+          setRay(elements.rayA, state.actual, 210);
+          elements.svgTitle.textContent = "线条倾角练习题";
+          elements.svgDesc.textContent = "完整水平参考线与黑色直线组成一对补角，可判断其中任意一个。";
+        } else if (isAngle) {
+          setRay(elements.rayA, state.baseAngle, 164);
+          setRay(elements.rayB, state.baseAngle + state.actual, 164);
+          elements.svgTitle.textContent = "两条射线的夹角练习题";
+          elements.svgDesc.textContent = "两条黑色射线组成一个待估计的夹角。";
+        } else {
+          const points = state.shapePoints.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" ");
+          elements.shapePolygon.setAttribute("points", points);
+          elements.svgTitle.textContent = "多边形内角练习题";
+          elements.svgDesc.textContent = "随机多边形的橙色圆点处为待估计的内角。";
+        }
+      }
+
+      function resetFeedback() {
+        elements.feedback.className = "feedback";
+        elements.feedbackIcon.textContent = "◎";
+        elements.feedbackTitle.textContent = "准备好就开始";
+        elements.feedbackText.textContent = "每次判断后，会显示实际角度和你的误差。";
+        elements.actualResult.hidden = true;
+        elements.referenceOption.hidden = true;
+        elements.showReference.checked = false;
+      }
+
+      function updateStats() {
+        elements.total.textContent = state.total;
+        elements.average.textContent = state.total ? formatNumber(state.totalError / state.total) : "—";
+        elements.accuracy.textContent = state.total ? Math.round(state.accurate / state.total * 100) : "—";
+        elements.questionNumber.textContent = `第 ${state.total + (state.answered ? 0 : 1)} 题`;
+      }
+
+      function newQuestion(shouldFocus = true) {
+        if (state.mode === "shape") {
+          let shape;
+          do {
+            shape = createShapeQuestion();
+          } while (shape.angle === state.actual);
+          state.actual = shape.angle;
+          state.baseAngle = shape.baseAngle;
+          state.shapePoints = shape.points;
+        } else {
+          let nextAngle;
+          do {
+            nextAngle = state.mode === "line" ? randomInt(0, 180) : randomInt(5, 175);
+          } while (nextAngle === state.actual);
+          state.actual = nextAngle;
+          state.baseAngle = state.mode === "line" ? 0 : randomInt(0, 359);
+          state.shapePoints = [];
+        }
+        state.answered = false;
+        elements.input.value = "";
+        elements.input.readOnly = false;
+        elements.input.removeAttribute("aria-invalid");
+        elements.inputError.textContent = "";
+        elements.submitLabel.textContent = "提交判断";
+        renderQuestion();
+        resetFeedback();
+        updateStats();
+        if (shouldFocus) elements.input.focus({ preventScroll: true });
+      }
+
+      function revealArc(answerAngle) {
+        const radius = 57;
+        let startAngle = state.baseAngle;
+        let guideStartAngle = state.baseAngle;
+        let guideDirection = 1;
+        if (state.mode === "line") {
+          const smallAngle = Math.min(state.actual, 180 - state.actual);
+          const judgingSmall = answerAngle === smallAngle;
+          const smallOnRight = state.actual <= 90;
+          const angleOnRight = judgingSmall === smallOnRight;
+          startAngle = angleOnRight ? 0 : state.actual;
+          guideStartAngle = angleOnRight ? 0 : 180;
+          guideDirection = angleOnRight ? 1 : -1;
+        }
+        const start = pointAt(startAngle, radius);
+        const end = pointAt(startAngle + answerAngle, radius);
+        const largeArc = answerAngle > 180 ? 1 : 0;
+        elements.answerArc.setAttribute(
+          "d",
+          `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${radius} ${radius} 0 ${largeArc} 0 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`
+        );
+        elements.answerArc.toggleAttribute("hidden", false);
+        prepareReference(guideStartAngle, answerAngle, guideDirection);
+        elements.showReference.checked = true;
+        elements.referenceGuide.toggleAttribute("hidden", false);
+        elements.svgDesc.textContent += ` 所判断的角度为 ${answerAngle} 度。`;
+      }
+
+      function showResult(guess) {
+        let answerAngle = state.actual;
+        if (state.mode === "line") {
+          const smallAngle = Math.min(state.actual, 180 - state.actual);
+          const largeAngle = 180 - smallAngle;
+          const smallError = Math.abs(guess - smallAngle);
+          const largeError = Math.abs(guess - largeAngle);
+          answerAngle = largeError < smallError ? largeAngle : smallAngle;
+        }
+        const error = Math.abs(guess - answerAngle);
+        const isAccurate = error <= 5;
+        state.total += 1;
+        state.totalError += error;
+        if (isAccurate) state.accurate += 1;
+        state.answered = true;
+        elements.input.readOnly = true;
+        elements.submitLabel.textContent = "下一题";
+        elements.actualValue.textContent = `${answerAngle}°`;
+        elements.errorValue.textContent = `你的 ${formatNumber(guess)}° · 相差 ${formatNumber(error)}°`;
+        elements.actualResult.hidden = false;
+        elements.referenceOption.hidden = false;
+
+        if (error === 0) {
+          elements.feedback.className = "feedback is-good";
+          elements.feedbackIcon.textContent = "✓";
+          elements.feedbackTitle.textContent = "完全命中！";
+          elements.feedbackText.textContent = "分毫不差，你的观察非常敏锐。";
+        } else if (isAccurate) {
+          elements.feedback.className = "feedback is-good";
+          elements.feedbackIcon.textContent = "✓";
+          elements.feedbackTitle.textContent = error <= 2 ? "非常接近！" : "判断不错！";
+          elements.feedbackText.textContent = "误差在 5° 以内，已经是一次准确判断。";
+        } else if (error <= 10) {
+          elements.feedback.className = "feedback is-warning";
+          elements.feedbackIcon.textContent = "↗";
+          elements.feedbackTitle.textContent = "已经很接近";
+          elements.feedbackText.textContent = "再留意它与最近的 45° 或 90° 相差多少。";
+        } else {
+          elements.feedback.className = "feedback is-bad";
+          elements.feedbackIcon.textContent = "!";
+          elements.feedbackTitle.textContent = "继续校准眼力";
+          elements.feedbackText.textContent = "观察橙色角度弧，记住这个角度的开阔程度。";
+        }
+
+        if (state.mode === "line") {
+          elements.feedbackText.textContent += ` 另一个角为 ${180 - answerAngle}°，两角相加为 180°。`;
+        }
+        revealArc(answerAngle);
+        updateStats();
+      }
+
+      elements.form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (state.answered) {
+          newQuestion();
+          return;
+        }
+
+        const rawValue = elements.input.value.trim();
+        const guess = Number(rawValue);
+        if (rawValue === "" || !Number.isFinite(guess) || guess < 0 || guess > 180) {
+          elements.input.setAttribute("aria-invalid", "true");
+          elements.inputError.textContent = "请输入 0 到 180 之间的角度";
+          elements.input.focus();
+          return;
+        }
+
+        elements.input.removeAttribute("aria-invalid");
+        elements.inputError.textContent = "";
+        showResult(guess);
+      });
+
+      elements.input.addEventListener("input", () => {
+        elements.input.removeAttribute("aria-invalid");
+        elements.inputError.textContent = "";
+      });
+
+      elements.showReference.addEventListener("change", () => {
+        elements.referenceGuide.toggleAttribute("hidden", !elements.showReference.checked);
+      });
+
+      document.querySelectorAll(".mode-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          const mode = button.dataset.mode;
+          if (mode === state.mode) return;
+          state.mode = mode;
+          document.querySelectorAll(".mode-button").forEach((item) => {
+            item.setAttribute("aria-pressed", String(item === button));
+          });
+
+          const copy = MODE_COPY[mode];
+          elements.questionTitle.textContent = copy.title;
+          elements.questionHint.textContent = copy.hint;
+          elements.stageNote.textContent = copy.note;
+          elements.coachText.textContent = copy.coach;
+          newQuestion();
+        });
+      });
+
+      $("resetButton").addEventListener("click", () => {
+        if (state.total > 0 && !window.confirm("确定清空本轮的练习记录吗？")) return;
+        state.total = 0;
+        state.totalError = 0;
+        state.accurate = 0;
+        newQuestion();
+      });
+
+      newQuestion(false);
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const views = { practice: $("practiceView"), reference: $("referenceView"), color: $("colorView") };
+      const titles = { practice: "角度眼力 · 临摹观察练习", reference: "角度参考 · 角度眼力", color: "色感练习 · 角度眼力" };
+      const focusTargets = { practice: "answerInput", reference: "customAngleInput", color: "lightnessInput" };
+
+      function switchView(view) {
+        Object.entries(views).forEach(([name, element]) => { element.hidden = name !== view; });
+        document.querySelectorAll(".view-nav-button").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.view === view));
+        });
+        $("practiceStats").hidden = view !== "practice";
+        $("practiceFooter").hidden = view !== "practice";
+        document.title = titles[view];
+        $(focusTargets[view]).focus({ preventScroll: true });
+      }
+
+      document.querySelectorAll(".view-nav-button").forEach((button) => {
+        button.addEventListener("click", () => switchView(button.dataset.view));
+      });
+
+      const PALETTE = ["#2a78d6", "#008300", "#e87ba4", "#eda100", "#1baf7a", "#eb6834", "#4a3aa7", "#e34948"];
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const angles = [];
+      let nextId = 1;
+      const input = $("customAngleInput");
+      const error = $("customAngleError");
+      const list = $("customAngleList");
+      const center = { x: 320, y: 220 };
+      const formatAngle = (value) => Number.isInteger(value) ? String(value) : value.toFixed(1);
+      const pointAt = (angle, radius) => {
+        const radians = angle * Math.PI / 180;
+        return { x: center.x + radius * Math.cos(radians), y: center.y - radius * Math.sin(radians) };
+      };
+      const svgElement = (name, attributes = {}) => {
+        const element = document.createElementNS(SVG_NS, name);
+        Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+        return element;
+      };
+
+      function renderAngles() {
+        $("customAngleCount").textContent = angles.length;
+        $("customAddButton").disabled = angles.length >= 8;
+        $("clearCustomAngles").disabled = angles.length === 0;
+        document.querySelectorAll("[data-custom-angle]").forEach((button) => {
+          button.disabled = angles.length >= 8;
+        });
+        $("customEmptyText").toggleAttribute("hidden", angles.length > 0);
+        $("customSvgDesc").textContent = angles.length
+          ? `当前显示 ${angles.length} 条自定义角度参考线：` + angles.map((item) => `${formatAngle(item.angle)}°`).join("、")
+          : "从水平方向起算的自定义角度，最多显示八条参考线。";
+
+        list.replaceChildren();
+        if (angles.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "empty-angle-list";
+          empty.textContent = "还没有参考线，最多可添加 8 条。";
+          list.append(empty);
+        } else {
+          angles.forEach((item) => {
+            const chip = document.createElement("div");
+            chip.className = "angle-chip";
+            chip.style.setProperty("--chip-color", PALETTE[item.slot]);
+            const swatch = document.createElement("span");
+            swatch.className = "angle-chip-swatch";
+            swatch.setAttribute("aria-hidden", "true");
+            const value = document.createElement("span");
+            value.className = "angle-chip-value";
+            value.textContent = `${formatAngle(item.angle)}°`;
+            const remove = document.createElement("button");
+            remove.className = "angle-chip-delete";
+            remove.type = "button";
+            remove.dataset.deleteId = item.id;
+            remove.setAttribute("aria-label", `删除 ${formatAngle(item.angle)}° 参考线`);
+            remove.textContent = "×";
+            chip.append(swatch, value, remove);
+            list.append(chip);
+          });
+        }
+
+        const drawing = $("customLines");
+        drawing.replaceChildren();
+        const sorted = [...angles].sort((a, b) => a.angle - b.angle);
+        let clusterIndex = 0;
+        sorted.forEach((item, index) => {
+          clusterIndex = index > 0 && item.angle - sorted[index - 1].angle < 14 ? clusterIndex + 1 : 0;
+          const end = pointAt(item.angle, 180);
+          const labelPoint = pointAt(item.angle, 198 - (clusterIndex % 4) * 20);
+          const group = svgElement("g", {
+            class: "custom-angle-group", tabindex: "0", role: "img",
+            "aria-label": `${formatAngle(item.angle)}° 参考线`
+          });
+          const title = svgElement("title");
+          title.textContent = `${formatAngle(item.angle)}° 参考线`;
+          const line = svgElement("line", {
+            x1: center.x, y1: center.y, x2: end.x.toFixed(2), y2: end.y.toFixed(2),
+            stroke: PALETTE[item.slot], "stroke-width": "2.5", "stroke-linecap": "round",
+            "vector-effect": "non-scaling-stroke"
+          });
+          const label = svgElement("text", {
+            x: labelPoint.x.toFixed(2), y: labelPoint.y.toFixed(2),
+            "text-anchor": "middle", class: "custom-angle-label"
+          });
+          label.textContent = `${formatAngle(item.angle)}°`;
+          group.append(title, line, label);
+          drawing.append(group);
+        });
+      }
+
+      function addAngle(rawValue) {
+        if (angles.length >= 8) {
+          error.textContent = "最多显示 8 条线，请先删除一条";
+          return;
+        }
+        const raw = String(rawValue).trim();
+        const numeric = Number(raw);
+        if (raw === "" || !Number.isFinite(numeric) || numeric < 0 || numeric > 180) {
+          error.textContent = "请输入 0 到 180 之间的角度";
+          return;
+        }
+        const angle = Math.round(numeric * 10) / 10;
+        if (angles.some((item) => item.angle === angle)) {
+          error.textContent = "这个角度已经添加过了";
+          return;
+        }
+        const usedSlots = new Set(angles.map((item) => item.slot));
+        const slot = PALETTE.findIndex((_, index) => !usedSlots.has(index));
+        angles.push({ id: nextId++, angle, slot });
+        error.textContent = "";
+        input.value = "";
+        renderAngles();
+        input.focus({ preventScroll: true });
+      }
+
+      $("customAngleForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        addAngle(input.value);
+      });
+      input.addEventListener("input", () => { error.textContent = ""; });
+      document.querySelectorAll("[data-custom-angle]").forEach((button) => {
+        button.addEventListener("click", () => addAngle(button.dataset.customAngle));
+      });
+      list.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-delete-id]");
+        if (!button) return;
+        const index = angles.findIndex((item) => item.id === Number(button.dataset.deleteId));
+        if (index >= 0) angles.splice(index, 1);
+        renderAngles();
+      });
+      $("clearCustomAngles").addEventListener("click", () => {
+        angles.length = 0;
+        error.textContent = "";
+        renderAngles();
+        input.focus({ preventScroll: true });
+      });
+      renderAngles();
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const input = $("lightnessInput");
+      const state = { mode: "color", target: null, answered: false, total: 0, totalError: 0 };
+      const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+      const formatValue = (value) => Number.isInteger(value) ? String(value) : value.toFixed(1);
+
+      function updateColorStats() {
+        const average = state.total ? formatValue(state.totalError / state.total) : "—";
+        $("colorStatsNote").textContent = `本轮 ${state.total} 次 · 平均误差 ${average}`;
+        $("colorQuestionNumber").textContent = `第 ${state.total + (state.answered ? 0 : 1)} 题`;
+      }
+
+      function newColorQuestion(shouldFocus = true) {
+        const isGray = state.mode === "gray";
+        state.target = {
+          h: isGray ? 0 : randomInt(0, 359),
+          s: isGray ? 0 : randomInt(35, 90),
+          l: randomInt(0, 100)
+        };
+        state.answered = false;
+        $("targetSwatch").style.backgroundColor = `hsl(${state.target.h}, ${state.target.s}%, ${state.target.l}%)`;
+        $("targetSwatch").setAttribute("aria-label", "待判断明度的目标颜色");
+        $("colorPromptTitle").textContent = isGray ? "这个灰色的明度是多少？" : "这个颜色的明度是多少？";
+        $("colorPromptHint").textContent = isGray
+          ? "灰阶模式 · 0% 为黑色，100% 为白色"
+          : "按 HSL 明度 L 判断：0% 为黑色，100% 为白色";
+        $("colorStageNote").textContent = isGray ? "只比较黑白灰的深浅，判断它对应的明度" : "忽略色相与鲜艳程度，只判断它看起来有多亮";
+        $("colorCoachText").textContent = isGray
+          ? "把目标灰色与下方灰阶比较。答题后，左侧会列出 10%–100% 的完整明度参考。"
+          : "先与黑白灰比较，再判断它靠近哪个灰阶。这里的明度使用 HSL 的 L 值，与饱和度是不同的概念。";
+        $("lightnessAnswerColumn").hidden = true;
+        $("lightnessAnswerColumn").replaceChildren();
+        input.value = "";
+        input.readOnly = false;
+        input.removeAttribute("aria-invalid");
+        $("lightnessInputError").textContent = "";
+        $("colorSubmitLabel").textContent = "提交判断";
+        $("colorFeedback").className = "feedback";
+        $("colorFeedbackIcon").textContent = "◎";
+        $("colorFeedbackTitle").textContent = "准备好就开始";
+        $("colorFeedbackText").textContent = "提交后会显示实际明度和你的误差。";
+        $("colorResult").hidden = true;
+        updateColorStats();
+        if (shouldFocus) input.focus({ preventScroll: true });
+      }
+
+      function renderLightnessColumn() {
+        const column = $("lightnessAnswerColumn");
+        column.replaceChildren();
+        const actualStep = Math.max(10, Math.round(state.target.l / 10) * 10);
+        for (let lightness = 10; lightness <= 100; lightness += 10) {
+          const row = document.createElement("div");
+          row.className = "lightness-step" + (lightness === actualStep ? " is-actual" : "");
+          row.setAttribute("role", "img");
+          row.setAttribute("aria-label", `明度 ${lightness}%${lightness === actualStep ? "，最接近答案" : ""}`);
+          const label = document.createElement("span");
+          label.textContent = `${lightness}%`;
+          const swatch = document.createElement("span");
+          swatch.className = "lightness-step-color";
+          swatch.style.backgroundColor = `hsl(${state.target.h}, ${state.target.s}%, ${lightness}%)`;
+          row.append(label, swatch);
+          column.append(row);
+        }
+        column.hidden = false;
+      }
+
+      function showColorResult(guess) {
+        const error = Math.abs(guess - state.target.l);
+        state.total += 1;
+        state.totalError += error;
+        state.answered = true;
+        input.readOnly = true;
+        $("colorSubmitLabel").textContent = "下一颜色";
+        $("lightnessActualValue").textContent = `${state.target.l}%`;
+        $("lightnessErrorValue").textContent = `你的 ${formatValue(guess)}% · 相差 ${formatValue(error)}%`;
+        $("colorResult").hidden = false;
+        renderLightnessColumn();
+        $("targetSwatch").setAttribute("aria-label", `目标颜色，实际 HSL 明度为 ${state.target.l}%`);
+
+        if (error <= 2) {
+          $("colorFeedback").className = "feedback is-good";
+          $("colorFeedbackIcon").textContent = "✓";
+          $("colorFeedbackTitle").textContent = error === 0 ? "完全命中！" : "非常接近！";
+        } else if (error <= 5) {
+          $("colorFeedback").className = "feedback is-good";
+          $("colorFeedbackIcon").textContent = "✓";
+          $("colorFeedbackTitle").textContent = "明度感不错！";
+        } else if (error <= 10) {
+          $("colorFeedback").className = "feedback is-warning";
+          $("colorFeedbackIcon").textContent = "↗";
+          $("colorFeedbackTitle").textContent = "已经接近";
+        } else {
+          $("colorFeedback").className = "feedback is-bad";
+          $("colorFeedbackIcon").textContent = "!";
+          $("colorFeedbackTitle").textContent = "继续校准";
+        }
+        $("colorFeedbackText").textContent = error === 0
+          ? "判断完全准确，记住这个颜色对应的灰阶。"
+          : guess > state.target.l
+            ? "你的判断偏高，这个颜色实际比你想象的更暗。"
+            : "你的判断偏低，这个颜色实际比你想象的更亮。";
+        updateColorStats();
+      }
+
+      document.querySelectorAll("[data-color-mode]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.colorMode === state.mode) return;
+          state.mode = button.dataset.colorMode;
+          document.querySelectorAll("[data-color-mode]").forEach((item) => {
+            item.setAttribute("aria-pressed", String(item === button));
+          });
+          newColorQuestion();
+        });
+      });
+
+      input.addEventListener("input", () => {
+        input.removeAttribute("aria-invalid");
+        $("lightnessInputError").textContent = "";
+      });
+      $("colorForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (state.answered) {
+          newColorQuestion();
+          return;
+        }
+        const raw = input.value.trim();
+        const guess = Number(raw);
+        if (raw === "" || !Number.isFinite(guess) || guess < 0 || guess > 100) {
+          input.setAttribute("aria-invalid", "true");
+          $("lightnessInputError").textContent = "请输入 0 到 100 之间的明度";
+          input.focus();
+          return;
+        }
+        input.removeAttribute("aria-invalid");
+        $("lightnessInputError").textContent = "";
+        showColorResult(guess);
+      });
+      newColorQuestion(false);
+    })();
+  </script>
+</body>
+</html>
