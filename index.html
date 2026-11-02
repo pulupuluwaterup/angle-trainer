@@ -470,6 +470,30 @@
       .stage-note { margin-bottom: 13px; }
       .answer-card { padding: 22px; }
       .footer p { max-width: 210px; line-height: 1.5; }
+
+      body.is-entering { --focused-graphic-height: 135px; }
+      .is-entering .app { width: calc(100% - 20px); padding: 8px 0; }
+      .is-entering .topbar, .is-entering .view-nav, .is-entering .toolbar, .is-entering .footer,
+      .is-entering .prompt p, .is-entering .stage-note,
+      .is-entering .answer-heading, .is-entering .answer-subtitle,
+      .is-entering .input-label, .is-entering .input-range,
+      .is-entering .coach-tip, .is-entering .feedback,
+      .is-entering .quick-label, .is-entering .quick-angles,
+      .is-entering .list-header, .is-entering .angle-list,
+      .is-entering .lightness-scale-wrap { display: none; }
+      .is-entering .workspace { gap: 8px; }
+      .is-entering .stage { margin: 0 8px 8px; border-radius: 12px; }
+      .is-entering .prompt { padding: 8px 10px 0; }
+      .is-entering .prompt h2 { margin: 0; font-size: 14px; }
+      .is-entering .angle-svg { height: var(--focused-graphic-height); }
+      .is-entering .color-display { height: var(--focused-graphic-height); margin: 8px; }
+      .is-entering .value-swatch { height: 100%; }
+      .is-entering .lightness-answer-column { display: none; }
+      .is-entering .answer-card { padding: 10px 12px; border-radius: 14px; }
+      .is-entering .degree-input { height: 54px; padding: 5px 38px 5px 20px; font-size: 30px; }
+      .is-entering .degree-symbol { top: 14px; right: 20px; font-size: 21px; }
+      .is-entering .input-error { min-height: 14px; margin: 3px 0; font-size: 10px; }
+      .is-entering .submit-button { min-height: 40px; padding: 9px 14px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1395,6 +1419,70 @@
         showColorResult(guess);
       });
       newColorQuestion(false);
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const mobile = window.matchMedia("(max-width: 600px)");
+      const viewport = window.visualViewport;
+      const inputs = ["answerInput", "customAngleInput", "lightnessInput"].map((id) => document.getElementById(id));
+      let activeInput = null;
+
+      function scrollToGraphic() {
+        const card = activeInput?.closest(".workspace")?.querySelector(".practice-card");
+        card?.scrollIntoView({ block: "start", behavior: "auto" });
+      }
+
+      function updateFocusLayout() {
+        if (!document.body.classList.contains("is-entering")) return;
+        const availableHeight = viewport?.height || window.innerHeight;
+        const graphicHeight = Math.max(85, Math.min(145, availableHeight - 250));
+        document.body.style.setProperty("--focused-graphic-height", `${graphicHeight}px`);
+      }
+
+      function enterFocusMode(input) {
+        if (!mobile.matches) return;
+        activeInput = input;
+        document.body.classList.add("is-entering");
+        updateFocusLayout();
+        requestAnimationFrame(scrollToGraphic);
+      }
+
+      function exitFocusMode() {
+        activeInput = null;
+        document.body.classList.remove("is-entering");
+        document.body.style.removeProperty("--focused-graphic-height");
+      }
+
+      inputs.forEach((input) => {
+        input.addEventListener("focus", () => enterFocusMode(input));
+        input.addEventListener("focusout", () => {
+          setTimeout(() => {
+            if (activeInput === input && !input.form.contains(document.activeElement)) exitFocusMode();
+          }, 0);
+        });
+      });
+
+      document.querySelectorAll("#answerForm, #customAngleForm, #colorForm").forEach((form) => {
+        form.addEventListener("submit", () => {
+          setTimeout(() => {
+            const input = form.querySelector('input[type="number"]');
+            const hasError = input.getAttribute("aria-invalid") === "true" ||
+              (form.id === "customAngleForm" && document.getElementById("customAngleError").textContent !== "");
+            if (hasError) return;
+            input.blur();
+            exitFocusMode();
+          }, 0);
+        });
+      });
+
+      viewport?.addEventListener("resize", () => {
+        if (!activeInput) return;
+        updateFocusLayout();
+        requestAnimationFrame(scrollToGraphic);
+      });
+      mobile.addEventListener("change", () => { if (!mobile.matches) exitFocusMode(); });
     })();
   </script>
 </body>
