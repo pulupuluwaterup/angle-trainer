@@ -1492,6 +1492,7 @@
 
   <script>
     (() => {
+      const $ = (id) => document.getElementById(id);
       const mobile = window.matchMedia("(max-width: 600px)");
       const viewport = window.visualViewport;
       const inputs = ["answerInput", "customAngleInput", "lightnessInput"].map((id) => document.getElementById(id));
@@ -1597,6 +1598,20 @@
             }
           }, 0);
         });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.repeat || event.isComposing) return;
+        const candidates = [
+          { view: $("practiceView"), input: $("answerInput"), result: $("actualResult"), button: $("submitButton") },
+          { view: $("colorView"), input: $("lightnessInput"), result: $("colorResult"), button: $("colorSubmitButton") }
+        ];
+        const current = candidates.find((item) => !item.view.hidden);
+        if (!current || !current.input.readOnly || current.result.hidden) return;
+        const active = document.activeElement;
+        if (active !== document.body && active !== current.input && active !== current.button) return;
+        event.preventDefault();
+        current.button.click();
       });
 
       viewport?.addEventListener("resize", () => {
