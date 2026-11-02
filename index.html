@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#f3f2ed">
-  <title>角度眼力 · 临摹观察练习</title>
+  <title>眼力练习</title>
   <style>
     :root {
       color-scheme: light;
@@ -494,6 +494,34 @@
       .is-entering .degree-symbol { top: 14px; right: 20px; font-size: 21px; }
       .is-entering .input-error { min-height: 14px; margin: 3px 0; font-size: 10px; }
       .is-entering .submit-button { min-height: 40px; padding: 9px 14px; }
+
+      body.is-result { --result-graphic-height: 220px; }
+      .is-result .app { width: calc(100% - 20px); padding: 8px 0; }
+      .is-result .topbar, .is-result .toolbar, .is-result .footer,
+      .is-result .prompt p, .is-result .stage-note,
+      .is-result .answer-heading, .is-result .answer-subtitle,
+      .is-result .input-label, .is-result .input-range, .is-result .input-wrap,
+      .is-result .input-error, .is-result .coach-tip,
+      .is-result .lightness-scale-wrap { display: none; }
+      .is-result .view-nav { margin-bottom: 8px; }
+      .is-result .workspace { gap: 8px; }
+      .is-result .stage { margin: 0 8px 8px; border-radius: 12px; }
+      .is-result .prompt { padding: 8px 10px 0; }
+      .is-result .prompt h2 { margin: 0; font-size: 14px; }
+      .is-result .angle-svg { height: var(--result-graphic-height); }
+      .is-result .color-display { height: var(--result-graphic-height); margin: 8px; }
+      .is-result .value-swatch { height: 100%; }
+      .is-result .answer-card { padding: 10px 12px; border-radius: 14px; }
+      .is-result .answer-card form { order: 2; margin-top: 8px; }
+      .is-result .feedback { order: 1; min-height: 0; margin-top: 0; padding: 10px; }
+      .is-result .feedback-main { gap: 8px; }
+      .is-result .feedback-icon { width: 20px; height: 20px; font-size: 11px; }
+      .is-result .feedback-title { font-size: 12px; }
+      .is-result .feedback-text { font-size: 10px; line-height: 1.45; }
+      .is-result .actual-result { margin-top: 8px; padding-top: 8px; }
+      .is-result .actual-value { font-size: 21px; }
+      .is-result .reference-option { margin-top: 8px; font-size: 10px; }
+      .is-result .submit-button { min-height: 40px; padding: 9px 14px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -512,8 +540,8 @@
           </svg>
         </div>
         <div>
-          <h1>角度眼力</h1>
-          <p>ANGLE TRAINING</p>
+          <h1>眼力练习</h1>
+          <p>EYE TRAINING</p>
         </div>
       </div>
 
@@ -977,7 +1005,9 @@
         renderQuestion();
         resetFeedback();
         updateStats();
-        if (shouldFocus) elements.input.focus({ preventScroll: true });
+        if (shouldFocus && !window.matchMedia("(max-width: 600px)").matches) {
+          elements.input.focus({ preventScroll: true });
+        }
       }
 
       function revealArc(answerAngle) {
@@ -1123,10 +1153,13 @@
     (() => {
       const $ = (id) => document.getElementById(id);
       const views = { practice: $("practiceView"), reference: $("referenceView"), color: $("colorView") };
-      const titles = { practice: "角度眼力 · 临摹观察练习", reference: "角度参考 · 角度眼力", color: "色感练习 · 角度眼力" };
+      const titles = { practice: "眼力练习", reference: "角度参考 · 眼力练习", color: "色感练习 · 眼力练习" };
       const focusTargets = { practice: "answerInput", reference: "customAngleInput", color: "lightnessInput" };
 
       function switchView(view) {
+        document.body.classList.remove("is-entering", "is-result");
+        document.body.style.removeProperty("--focused-graphic-height");
+        document.body.style.removeProperty("--result-graphic-height");
         Object.entries(views).forEach(([name, element]) => { element.hidden = name !== view; });
         document.querySelectorAll(".view-nav-button").forEach((button) => {
           button.setAttribute("aria-pressed", String(button.dataset.view === view));
@@ -1134,7 +1167,9 @@
         $("practiceStats").hidden = view !== "practice";
         $("practiceFooter").hidden = view !== "practice";
         document.title = titles[view];
-        $(focusTargets[view]).focus({ preventScroll: true });
+        if (!window.matchMedia("(max-width: 600px)").matches) {
+          $(focusTargets[view]).focus({ preventScroll: true });
+        }
       }
 
       document.querySelectorAll(".view-nav-button").forEach((button) => {
@@ -1324,7 +1359,9 @@
         $("colorFeedbackText").textContent = "提交后会显示实际明度和你的误差。";
         $("colorResult").hidden = true;
         updateColorStats();
-        if (shouldFocus) input.focus({ preventScroll: true });
+        if (shouldFocus && !window.matchMedia("(max-width: 600px)").matches) {
+          input.focus({ preventScroll: true });
+        }
       }
 
       function renderLightnessColumn() {
@@ -1444,15 +1481,41 @@
       function enterFocusMode(input) {
         if (!mobile.matches) return;
         activeInput = input;
+        document.body.classList.remove("is-result");
+        document.body.style.removeProperty("--result-graphic-height");
         document.body.classList.add("is-entering");
         updateFocusLayout();
         requestAnimationFrame(scrollToGraphic);
+      }
+
+      function updateResultLayout() {
+        if (!document.body.classList.contains("is-result")) return;
+        const availableHeight = viewport?.height || window.innerHeight;
+        const graphicHeight = Math.max(135, Math.min(230, availableHeight - 330));
+        document.body.style.setProperty("--result-graphic-height", `${graphicHeight}px`);
+      }
+
+      function enterResultMode() {
+        if (!mobile.matches) return;
+        activeInput = null;
+        document.body.classList.remove("is-entering");
+        document.body.style.removeProperty("--focused-graphic-height");
+        document.body.classList.add("is-result");
+        updateResultLayout();
+        requestAnimationFrame(() => document.querySelector(".app").scrollIntoView({ block: "start", behavior: "auto" }));
       }
 
       function exitFocusMode() {
         activeInput = null;
         document.body.classList.remove("is-entering");
         document.body.style.removeProperty("--focused-graphic-height");
+      }
+
+      function exitModes() {
+        activeInput = null;
+        document.body.classList.remove("is-entering", "is-result");
+        document.body.style.removeProperty("--focused-graphic-height");
+        document.body.style.removeProperty("--result-graphic-height");
       }
 
       inputs.forEach((input) => {
@@ -1471,18 +1534,30 @@
             const hasError = input.getAttribute("aria-invalid") === "true" ||
               (form.id === "customAngleForm" && document.getElementById("customAngleError").textContent !== "");
             if (hasError) return;
-            input.blur();
-            exitFocusMode();
+            const isAnswerForm = form.id === "answerForm" || form.id === "colorForm";
+            if (isAnswerForm && input.readOnly) {
+              input.blur();
+              enterResultMode();
+            } else if (isAnswerForm) {
+              if (mobile.matches) exitModes();
+            } else {
+              if (mobile.matches) input.blur();
+              exitModes();
+            }
           }, 0);
         });
       });
 
       viewport?.addEventListener("resize", () => {
+        if (document.body.classList.contains("is-result")) {
+          updateResultLayout();
+          return;
+        }
         if (!activeInput) return;
         updateFocusLayout();
         requestAnimationFrame(scrollToGraphic);
       });
-      mobile.addEventListener("change", () => { if (!mobile.matches) exitFocusMode(); });
+      mobile.addEventListener("change", () => { if (!mobile.matches) exitModes(); });
     })();
   </script>
 </body>
