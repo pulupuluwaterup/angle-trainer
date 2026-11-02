@@ -426,7 +426,7 @@
     }
     .lightness-answer-column {
       display: grid;
-      grid-template-rows: repeat(10, 1fr);
+      grid-template-rows: repeat(11, 1fr);
       gap: 4px;
       flex: 0 0 84px;
       width: 84px;
@@ -1388,7 +1388,7 @@
           : "按 HSL 明度 L 判断：0% 为黑色，100% 为白色";
         $("colorStageNote").textContent = isGray ? "只比较黑白灰的深浅，判断它对应的明度" : "忽略色相与鲜艳程度，只判断它看起来有多亮";
         $("colorCoachText").textContent = isGray
-          ? "把目标灰色与下方灰阶比较。答题后，左侧会列出 10%–100% 的完整明度参考。"
+          ? "把目标灰色与下方灰阶比较。答题后，左侧会列出 0%–100% 的完整明度参考。"
           : "先与黑白灰比较，再判断它靠近哪个灰阶。这里的明度使用 HSL 的 L 值，与饱和度是不同的概念。";
         $("lightnessAnswerColumn").hidden = true;
         $("lightnessAnswerColumn").replaceChildren();
@@ -1411,8 +1411,8 @@
       function renderLightnessColumn() {
         const column = $("lightnessAnswerColumn");
         column.replaceChildren();
-        const actualStep = Math.max(10, Math.round(state.target.l / 10) * 10);
-        for (let lightness = 10; lightness <= 100; lightness += 10) {
+        const actualStep = Math.round(state.target.l / 10) * 10;
+        for (let lightness = 0; lightness <= 100; lightness += 10) {
           const row = document.createElement("div");
           row.className = "lightness-step" + (lightness === actualStep ? " is-actual" : "");
           row.setAttribute("role", "img");
