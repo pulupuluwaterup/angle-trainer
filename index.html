@@ -461,6 +461,12 @@
     }
     .lightness-scale-labels { display: flex; justify-content: space-between; margin-top: 6px; color: var(--muted); font-size: 10px; }
     .color-stats-note { margin-top: 12px; color: var(--muted); font-size: 11px; }
+    .drawing-task { margin: 18px 0; padding: 14px; background: var(--accent-soft); border-radius: 12px; }
+    .drawing-task > span { display: block; color: var(--muted); font-size: 11px; }
+    .drawing-task strong { display: block; margin: 3px 0 8px; font-size: 40px; }
+    .drawing-task p { margin: 0 0 8px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    #proportionView.is-drawing .numeric-only { display: none; }
+    #proportionView.is-drawing #proportionSvg { touch-action: none; cursor: crosshair; }
 
     @keyframes reveal {
       from { opacity: 0; }
@@ -561,7 +567,7 @@
       .is-result .prompt p, .is-result .stage-note,
       .is-result .answer-heading, .is-result .answer-subtitle,
       .is-result .input-label, .is-result .input-range, .is-result .input-wrap,
-      .is-result .input-error, .is-result .coach-tip,
+      .is-result .input-error, .is-result .coach-tip, .is-result .drawing-task,
       .is-result .lightness-scale-wrap { display: none; }
       .is-result .view-nav { margin-bottom: 8px; }
       .is-result .workspace { gap: 8px; }
@@ -810,6 +816,7 @@
           <div class="mode-switch" role="group" aria-label="色感练习模式">
             <button class="mode-button" type="button" data-color-mode="color" aria-pressed="true">彩色模式</button>
             <button class="mode-button" type="button" data-color-mode="gray" aria-pressed="false">灰阶模式</button>
+            <button class="mode-button" type="button" data-color-mode="saturation" aria-pressed="false">纯度模式</button>
           </div>
           <span class="question-number" id="colorQuestionNumber">第 1 题</span>
         </div>
@@ -826,8 +833,8 @@
             </div>
           </div>
           <div class="lightness-scale-wrap" aria-hidden="true">
-            <div class="lightness-scale"></div>
-            <div class="lightness-scale-labels"><span>0% 黑</span><span>50%</span><span>100% 白</span></div>
+            <div class="lightness-scale" id="colorScale"></div>
+            <div class="lightness-scale-labels" id="colorScaleLabels"><span>0% 黑</span><span>50%</span><span>100% 白</span></div>
           </div>
           <div class="stage-note" id="colorStageNote">忽略色相与鲜艳程度，只判断它看起来有多亮</div>
         </div>
@@ -835,9 +842,9 @@
 
       <aside class="answer-card">
         <h2 class="answer-heading">你的判断</h2>
-        <p class="answer-subtitle">输入你估计的明度百分比</p>
+        <p class="answer-subtitle" id="colorAnswerSubtitle">输入你估计的明度百分比</p>
         <form id="colorForm" novalidate>
-          <label class="input-label" for="lightnessInput">明度 L</label>
+          <label class="input-label" id="colorInputLabel" for="lightnessInput">明度 L</label>
           <div class="input-wrap">
             <input class="degree-input" id="lightnessInput" type="number" min="0" max="100" step="1" inputmode="decimal" autocomplete="off" placeholder="50" aria-describedby="lightnessInputError">
             <span class="degree-symbol" aria-hidden="true">%</span>
@@ -856,14 +863,14 @@
             </div>
           </div>
           <div class="actual-result" id="colorResult" hidden>
-            <span class="actual-label">实际明度</span>
+            <span class="actual-label" id="colorActualLabel">实际明度</span>
             <strong class="actual-value" id="lightnessActualValue">—</strong>
             <span class="error-value" id="lightnessErrorValue"></span>
           </div>
         </div>
 
         <div class="coach-tip">
-          <p class="coach-title">明度小方法</p>
+          <p class="coach-title" id="colorCoachTitle">明度小方法</p>
           <p class="coach-text" id="colorCoachText">先与黑白灰比较，再判断它靠近哪个灰阶。这里的明度使用 HSL 的 L 值，与饱和度是不同的概念。</p>
           <p class="color-stats-note" id="colorStatsNote">本轮 0 次 · 平均误差 —</p>
         </div>
@@ -873,17 +880,24 @@
     <main class="workspace" id="proportionView" hidden>
       <section class="practice-card" aria-labelledby="proportionPromptTitle">
         <div class="toolbar">
-          <h2 class="answer-heading">长度比例</h2>
+          <div class="mode-switch" role="group" aria-label="比例练习模式">
+            <button class="mode-button" type="button" data-proportion-mode="parallel" aria-pressed="true">平行</button>
+            <button class="mode-button" type="button" data-proportion-mode="random" aria-pressed="false">乱序</button>
+            <button class="mode-button" type="button" data-proportion-mode="shape" aria-pressed="false">图形</button>
+            <button class="mode-button" type="button" data-proportion-mode="draw" aria-pressed="false">画线</button>
+          </div>
           <span class="question-number" id="proportionQuestionNumber">第 1 题</span>
         </div>
         <div class="stage">
           <div class="prompt">
-            <h2 id="proportionPromptTitle">A 是 B 的百分之多少？</h2>
-            <p>A 是目标线段，B 是参考线段；只比较它们的长度</p>
+            <h2 id="proportionPromptTitle">短线段是长线段的百分之多少？</h2>
+            <p id="proportionPromptHint">比较两条线段的长度，用短线段 ÷ 长线段 × 100%</p>
           </div>
           <svg class="angle-svg" id="proportionSvg" viewBox="0 0 640 380" role="img" aria-labelledby="proportionSvgTitle proportionSvgDesc">
             <title id="proportionSvgTitle">线段长度比例练习</title>
-            <desc id="proportionSvgDesc">比较目标线段 A 与参考线段 B 的长度。</desc>
+            <desc id="proportionSvgDesc">比较两条线段中短线段与长线段的长度比例。</desc>
+            <rect id="proportionShape" x="210" y="120" width="220" height="140" rx="5" fill="#eeeee7" stroke="#c5c8bf" stroke-width="2" vector-effect="non-scaling-stroke" hidden/>
+            <text id="proportionDrawHint" class="svg-caption" x="450" y="190" text-anchor="middle" hidden>在这里按住并拖动画线</text>
             <line id="proportionLineA" class="ray" x1="140" y1="145" x2="300" y2="145" style="stroke: var(--accent);" vector-effect="non-scaling-stroke"/>
             <line id="proportionLineB" class="ray" x1="140" y1="250" x2="300" y2="250" vector-effect="non-scaling-stroke"/>
             <text id="proportionLabelA" class="svg-caption" x="102" y="151" text-anchor="middle">A</text>
@@ -896,14 +910,20 @@
 
       <aside class="answer-card">
         <h2 class="answer-heading">你的判断</h2>
-        <p class="answer-subtitle">输入 A 相对于 B 的长度百分比</p>
+        <p class="answer-subtitle">输入较小者相对于较大者的长度百分比</p>
+        <div class="drawing-task" id="proportionDrawingTask" hidden>
+          <span>目标比例</span>
+          <strong id="proportionTargetRatio">50%</strong>
+          <p>在右侧空白处按住并拖动，画出参考线的目标比例。</p>
+          <button class="clear-list-button" id="proportionRedrawButton" type="button">重新画</button>
+        </div>
         <form id="proportionForm" novalidate>
-          <label class="input-label" for="proportionInput">A / B</label>
-          <div class="input-wrap">
-            <input class="degree-input" id="proportionInput" type="number" min="0" max="300" step="1" inputmode="decimal" autocomplete="off" placeholder="100" aria-describedby="proportionInputError">
+          <label class="input-label numeric-only" id="proportionInputLabel" for="proportionInput">短 / 长</label>
+          <div class="input-wrap numeric-only">
+            <input class="degree-input" id="proportionInput" type="number" min="0" max="100" step="1" inputmode="decimal" autocomplete="off" placeholder="50" aria-describedby="proportionInputError">
             <span class="degree-symbol" aria-hidden="true">%</span>
           </div>
-          <div class="input-range" aria-hidden="true"><span>0%</span><span>300%</span></div>
+          <div class="input-range numeric-only" aria-hidden="true"><span>0%</span><span>100%</span></div>
           <p class="input-error" id="proportionInputError" role="alert"></p>
           <button class="submit-button" id="proportionSubmitButton" type="submit"><span id="proportionSubmitLabel">提交判断</span><span class="key-hint">Enter ↵</span></button>
         </form>
@@ -1464,26 +1484,36 @@
 
       function newColorQuestion(shouldFocus = true) {
         const isGray = state.mode === "gray";
-        state.target = {
-          h: isGray ? 0 : randomInt(0, 359),
-          s: isGray ? 0 : randomInt(35, 90),
-          l: randomInt(0, 100)
-        };
+        const isSaturation = state.mode === "saturation";
+        state.target = isGray
+          ? { h: 0, s: 0, l: randomInt(0, 100) }
+          : isSaturation
+            ? { h: randomInt(0, 359), s: randomInt(0, 100), l: randomInt(30, 70) }
+            : { h: randomInt(0, 359), s: randomInt(35, 90), l: randomInt(0, 100) };
         state.answered = false;
         state.comparison = null;
         $("targetSwatch").style.background = "";
         $("targetSwatch").style.backgroundColor = `hsl(${state.target.h}, ${state.target.s}%, ${state.target.l}%)`;
         $("originalColorLabel").hidden = true;
         $("compareColorLabel").hidden = true;
-        $("targetSwatch").setAttribute("aria-label", "待判断明度的目标颜色");
-        $("colorPromptTitle").textContent = isGray ? "这个灰色的明度是多少？" : "这个颜色的明度是多少？";
-        $("colorPromptHint").textContent = isGray
-          ? "灰阶模式 · 0% 为黑色，100% 为白色"
-          : "按 HSL 明度 L 判断：0% 为黑色，100% 为白色";
-        $("colorStageNote").textContent = isGray ? "只比较黑白灰的深浅，判断它对应的明度" : "忽略色相与鲜艳程度，只判断它看起来有多亮";
-        $("colorCoachText").textContent = isGray
-          ? "把目标灰色与下方灰阶比较。答题后，左侧会列出 0%–100% 的完整明度参考。"
-          : "先与黑白灰比较，再判断它靠近哪个灰阶。这里的明度使用 HSL 的 L 值，与饱和度是不同的概念。";
+        $("colorScale").style.background = isSaturation
+          ? `linear-gradient(90deg, hsl(${state.target.h} 0% ${state.target.l}%), hsl(${state.target.h} 100% ${state.target.l}%))`
+          : "";
+        $("colorScaleLabels").children[0].textContent = isSaturation ? "0% 灰" : "0% 黑";
+        $("colorScaleLabels").children[2].textContent = isSaturation ? "100% 鲜" : "100% 白";
+        $("targetSwatch").setAttribute("aria-label", "待判断的目标颜色");
+        $("colorPromptTitle").textContent = isSaturation ? "这个颜色的纯度是多少？" : isGray ? "这个灰色的明度是多少？" : "这个颜色的明度是多少？";
+        $("colorPromptHint").textContent = isSaturation
+          ? "按 HSL 饱和度 S 判断：0% 为灰色，100% 为最鲜艳"
+          : isGray ? "灰阶模式 · 0% 为黑色，100% 为白色" : "按 HSL 明度 L 判断：0% 为黑色，100% 为白色";
+        $("colorStageNote").textContent = isSaturation ? "忽略明暗，只判断颜色的鲜艳程度" : isGray ? "只比较黑白灰的深浅，判断它对应的明度" : "忽略色相与鲜艳程度，只判断它看起来有多亮";
+        $("colorCoachText").textContent = isSaturation
+          ? "纯度使用 HSL 的 S 值。先判断它更接近灰色还是鲜艳纯色，再细调百分比。"
+          : isGray ? "把目标灰色与下方灰阶比较。答题后，左侧会列出 0%–100% 的完整明度参考。" : "先与黑白灰比较，再判断它靠近哪个灰阶。这里的明度使用 HSL 的 L 值，与饱和度是不同的概念。";
+        $("colorInputLabel").textContent = isSaturation ? "纯度 S" : "明度 L";
+        $("colorCoachTitle").textContent = isSaturation ? "纯度小方法" : "明度小方法";
+        $("colorActualLabel").textContent = isSaturation ? "实际纯度" : "实际明度";
+        $("colorAnswerSubtitle").textContent = `输入你估计的${isSaturation ? "纯度" : "明度"}百分比`;
         $("lightnessAnswerColumn").hidden = true;
         $("lightnessAnswerColumn").replaceChildren();
         input.value = "";
@@ -1494,7 +1524,7 @@
         $("colorFeedback").className = "feedback";
         $("colorFeedbackIcon").textContent = "◎";
         $("colorFeedbackTitle").textContent = "准备好就开始";
-        $("colorFeedbackText").textContent = "提交后会显示实际明度和你的误差。";
+        $("colorFeedbackText").textContent = `提交后会显示实际${isSaturation ? "纯度" : "明度"}和你的误差。`;
         $("colorResult").hidden = true;
         updateColorStats();
         if (shouldFocus && !window.matchMedia("(max-width: 600px)").matches) {
@@ -1505,19 +1535,22 @@
       function renderLightnessColumn() {
         const column = $("lightnessAnswerColumn");
         column.replaceChildren();
-        const actualStep = Math.round(state.target.l / 10) * 10;
+        const isSaturation = state.mode === "saturation";
+        const actualValue = isSaturation ? state.target.s : state.target.l;
+        const actualStep = Math.round(actualValue / 10) * 10;
+        column.setAttribute("aria-label", `同一色相下的${isSaturation ? "纯度" : "明度"}参考答案，点击可对比`);
         for (let lightness = 0; lightness <= 100; lightness += 10) {
           const row = document.createElement("button");
           row.type = "button";
           row.dataset.lightness = lightness;
           row.className = "lightness-step" + (lightness === actualStep ? " is-actual" : "");
           row.setAttribute("aria-pressed", "false");
-          row.setAttribute("aria-label", `明度 ${lightness}%${lightness === actualStep ? "，最接近答案" : ""}，点击与原色对比`);
+          row.setAttribute("aria-label", `${isSaturation ? "纯度" : "明度"} ${lightness}%${lightness === actualStep ? "，最接近答案" : ""}，点击与原色对比`);
           const label = document.createElement("span");
           label.textContent = `${lightness}%`;
           const swatch = document.createElement("span");
           swatch.className = "lightness-step-color";
-          swatch.style.backgroundColor = `hsl(${state.target.h}, ${state.target.s}%, ${lightness}%)`;
+          swatch.style.backgroundColor = `hsl(${state.target.h}, ${isSaturation ? lightness : state.target.s}%, ${isSaturation ? state.target.l : lightness}%)`;
           row.append(label, swatch);
           column.append(row);
         }
@@ -1525,12 +1558,14 @@
       }
 
       function clearComparison() {
+        const isSaturation = state.mode === "saturation";
+        const actualValue = isSaturation ? state.target.s : state.target.l;
         state.comparison = null;
         $("targetSwatch").style.background = "";
         $("targetSwatch").style.backgroundColor = `hsl(${state.target.h}, ${state.target.s}%, ${state.target.l}%)`;
         $("originalColorLabel").hidden = true;
         $("compareColorLabel").hidden = true;
-        $("targetSwatch").setAttribute("aria-label", `目标颜色，实际 HSL 明度为 ${state.target.l}%`);
+        $("targetSwatch").setAttribute("aria-label", `目标颜色，实际 HSL ${isSaturation ? "纯度" : "明度"}为 ${actualValue}%`);
         document.querySelectorAll(".lightness-step").forEach((button) => {
           button.classList.remove("is-selected");
           button.setAttribute("aria-pressed", "false");
@@ -1543,14 +1578,15 @@
           return;
         }
         state.comparison = lightness;
+        const isSaturation = state.mode === "saturation";
         const original = `hsl(${state.target.h}, ${state.target.s}%, ${state.target.l}%)`;
-        const reference = `hsl(${state.target.h}, ${state.target.s}%, ${lightness}%)`;
+        const reference = `hsl(${state.target.h}, ${isSaturation ? lightness : state.target.s}%, ${isSaturation ? state.target.l : lightness}%)`;
         $("targetSwatch").style.background = `linear-gradient(90deg, ${original} 0%, ${original} 50%, ${reference} 50%, ${reference} 100%)`;
-        $("originalColorLabel").textContent = `原色 ${state.target.l}%`;
+        $("originalColorLabel").textContent = `原色 ${isSaturation ? state.target.s : state.target.l}%`;
         $("compareColorLabel").textContent = `对比 ${lightness}%`;
         $("originalColorLabel").hidden = false;
         $("compareColorLabel").hidden = false;
-        $("targetSwatch").setAttribute("aria-label", `左侧为原色，明度 ${state.target.l}%；右侧为对比色，明度 ${lightness}%`);
+        $("targetSwatch").setAttribute("aria-label", `左侧为原色，${isSaturation ? "纯度" : "明度"} ${isSaturation ? state.target.s : state.target.l}%；右侧为对比色，${isSaturation ? "纯度" : "明度"} ${lightness}%`);
         document.querySelectorAll(".lightness-step").forEach((button) => {
           const selected = Number(button.dataset.lightness) === lightness;
           button.classList.toggle("is-selected", selected);
@@ -1559,18 +1595,20 @@
       }
 
       function showColorResult(guess) {
-        const error = Math.abs(guess - state.target.l);
+        const isSaturation = state.mode === "saturation";
+        const actualValue = isSaturation ? state.target.s : state.target.l;
+        const error = Math.abs(guess - actualValue);
         state.total += 1;
         state.totalError += error;
         state.answered = true;
         input.readOnly = true;
         $("colorSubmitLabel").textContent = "下一颜色";
-        $("lightnessActualValue").textContent = `${state.target.l}%`;
+        $("lightnessActualValue").textContent = `${actualValue}%`;
         $("lightnessErrorValue").textContent = `你的 ${formatValue(guess)}% · 相差 ${formatValue(error)}%`;
         $("colorResult").hidden = false;
         renderLightnessColumn();
         clearComparison();
-        $("colorStageNote").textContent = "点击左侧明度色块，可与原色并排对比";
+        $("colorStageNote").textContent = `点击左侧${isSaturation ? "纯度" : "明度"}色块，可与原色并排对比`;
 
         if (error <= 2) {
           $("colorFeedback").className = "feedback is-good";
@@ -1590,10 +1628,12 @@
           $("colorFeedbackTitle").textContent = "继续校准";
         }
         $("colorFeedbackText").textContent = error === 0
-          ? "判断完全准确，记住这个颜色对应的灰阶。"
-          : guess > state.target.l
-            ? "你的判断偏高，这个颜色实际比你想象的更暗。"
-            : "你的判断偏低，这个颜色实际比你想象的更亮。";
+          ? `判断完全准确，记住这个颜色的${isSaturation ? "鲜艳程度" : "灰阶"}。`
+          : isSaturation
+            ? guess > actualValue ? "你的判断偏高，这个颜色实际上更灰、更柔和。" : "你的判断偏低，这个颜色实际上更鲜艳。"
+            : guess > actualValue
+              ? "你的判断偏高，这个颜色实际比你想象的更暗。"
+              : "你的判断偏低，这个颜色实际比你想象的更亮。";
         updateColorStats();
       }
 
@@ -1628,7 +1668,7 @@
         const guess = Number(raw);
         if (raw === "" || !Number.isFinite(guess) || guess < 0 || guess > 100) {
           input.setAttribute("aria-invalid", "true");
-          $("lightnessInputError").textContent = "请输入 0 到 100 之间的明度";
+          $("lightnessInputError").textContent = `请输入 0 到 100 之间的${state.mode === "saturation" ? "纯度" : "明度"}`;
           input.focus();
           return;
         }
@@ -1644,7 +1684,12 @@
     (() => {
       const $ = (id) => document.getElementById(id);
       const input = $("proportionInput");
-      const state = { actual: 0, orientation: "horizontal", answered: false, total: 0, totalError: 0, accurate: 0 };
+      const svg = $("proportionSvg");
+      const state = {
+        mode: "parallel", actual: 0, swap: false, orientation: "horizontal",
+        angleA: 0, angleB: 90, answered: false, total: 0, totalError: 0, accurate: 0,
+        drawing: false, drawStart: null, drawnLength: 0
+      };
       const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
       const formatValue = (value) => Number.isInteger(value) ? String(value) : value.toFixed(1);
 
@@ -1663,53 +1708,135 @@
         line.setAttribute("y2", y2);
       }
 
+      function setLabel(id, x, y) {
+        $(id).setAttribute("x", x);
+        $(id).setAttribute("y", y);
+      }
+
+      function setOrientationLabel(text, y) {
+        $("proportionOrientationLabel").setAttribute("x", 320);
+        $("proportionOrientationLabel").setAttribute("y", y);
+        $("proportionOrientationLabel").textContent = text;
+      }
+
       function renderProportion() {
-        const length = 160 * state.actual / 100;
-        if (state.orientation === "horizontal") {
-          setLine("proportionLineA", 140, 145, 140 + length, 145);
-          setLine("proportionLineB", 140, 250, 300, 250);
-          $("proportionLabelA").setAttribute("x", 102);
-          $("proportionLabelA").setAttribute("y", 151);
-          $("proportionLabelB").setAttribute("x", 102);
-          $("proportionLabelB").setAttribute("y", 256);
-          $("proportionOrientationLabel").setAttribute("x", 320);
-          $("proportionOrientationLabel").setAttribute("y", 330);
-          $("proportionOrientationLabel").textContent = "横向长度比较";
-        } else {
-          setLine("proportionLineA", 230, 330, 230, 330 - length);
-          setLine("proportionLineB", 410, 330, 410, 170);
-          $("proportionLabelA").setAttribute("x", 230);
-          $("proportionLabelA").setAttribute("y", 358);
-          $("proportionLabelB").setAttribute("x", 410);
-          $("proportionLabelB").setAttribute("y", 358);
-          $("proportionOrientationLabel").setAttribute("x", 320);
-          $("proportionOrientationLabel").setAttribute("y", 34);
-          $("proportionOrientationLabel").textContent = "竖向长度比较";
+        const isShape = state.mode === "shape";
+        const isDraw = state.mode === "draw";
+        $("proportionShape").toggleAttribute("hidden", !isShape);
+        $("proportionLineA").toggleAttribute("hidden", isDraw && state.drawnLength === 0);
+        $("proportionLineB").toggleAttribute("hidden", false);
+        $("proportionLabelA").toggleAttribute("hidden", isDraw && state.drawnLength === 0);
+        $("proportionLabelB").toggleAttribute("hidden", false);
+        $("proportionDrawHint").toggleAttribute("hidden", !isDraw || state.drawnLength > 0);
+
+        if (isShape) {
+          const longSide = 220;
+          const shortSide = longSide * state.actual / 100;
+          const width = state.swap ? shortSide : longSide;
+          const height = state.swap ? longSide : shortSide;
+          const x = 320 - width / 2;
+          const y = 190 - height / 2;
+          const rect = $("proportionShape");
+          rect.setAttribute("x", x);
+          rect.setAttribute("y", y);
+          rect.setAttribute("width", width);
+          rect.setAttribute("height", height);
+          setLine("proportionLineA", x, y, x + width, y);
+          setLine("proportionLineB", x + width, y, x + width, y + height);
+          setLabel("proportionLabelA", 320, y - 13);
+          setLabel("proportionLabelB", x + width + 22, 196);
+          setOrientationLabel("图形边长比例", 340);
+          $("proportionSvgDesc").textContent = "一个矩形的两条高亮邻边，比较短边与长边的比例。";
+          return;
         }
-        $("proportionSvgDesc").textContent = `${state.orientation === "horizontal" ? "横向" : "竖向"}线段，比较目标 A 与参考 B 的长度。`;
+
+        if (isDraw) {
+          setLine("proportionLineB", 70, 190, 230, 190);
+          setLabel("proportionLabelB", 75, 225);
+          setOrientationLabel("参考线 B", 125);
+          $("proportionSvgDesc").textContent = `参考线 B，目标是画出它 ${state.actual}% 的长度。`;
+          return;
+        }
+
+        const shortLength = 160 * state.actual / 100;
+        const lengthA = state.swap ? shortLength : 160;
+        const lengthB = state.swap ? 160 : shortLength;
+        if (state.mode === "random") {
+          const drawRay = (id, cx, cy, angle, length) => {
+            const radians = angle * Math.PI / 180;
+            const dx = Math.cos(radians) * length / 2;
+            const dy = Math.sin(radians) * length / 2;
+            setLine(id, cx - dx, cy - dy, cx + dx, cy + dy);
+          };
+          drawRay("proportionLineA", 210, 190, state.angleA, lengthA);
+          drawRay("proportionLineB", 440, 190, state.angleB, lengthB);
+          setLabel("proportionLabelA", 210, 320);
+          setLabel("proportionLabelB", 440, 320);
+          setOrientationLabel("乱序长度比较", 45);
+          $("proportionSvgDesc").textContent = "两条方向不同的线段，只比较它们的长短比例。";
+        } else if (state.orientation === "horizontal") {
+          setLine("proportionLineA", 140, 145, 140 + lengthA, 145);
+          setLine("proportionLineB", 140, 250, 140 + lengthB, 250);
+          setLabel("proportionLabelA", 102, 151);
+          setLabel("proportionLabelB", 102, 256);
+          setOrientationLabel("横向长度比较", 330);
+          $("proportionSvgDesc").textContent = "两条横向线段，比较短线段与长线段的比例。";
+        } else {
+          setLine("proportionLineA", 230, 330, 230, 330 - lengthA);
+          setLine("proportionLineB", 410, 330, 410, 330 - lengthB);
+          setLabel("proportionLabelA", 230, 358);
+          setLabel("proportionLabelB", 410, 358);
+          setOrientationLabel("竖向长度比较", 34);
+          $("proportionSvgDesc").textContent = "两条竖向线段，比较短线段与长线段的比例。";
+        }
+      }
+
+      function updateProportionPrompt() {
+        const isShape = state.mode === "shape";
+        const isDraw = state.mode === "draw";
+        $("proportionPromptTitle").textContent = isShape
+          ? "这个图形中，短边是长边的百分之多少？"
+          : isDraw ? `请画出参考线的 ${state.actual}%` : "短线段是长线段的百分之多少？";
+        $("proportionPromptHint").textContent = isShape
+          ? "比较两条高亮邻边，用短边 ÷ 长边 × 100%"
+          : isDraw ? "在右侧空白处按住并拖动画线，方向不限"
+            : state.mode === "random" ? "两条线方向不同，仍然只比较实际长度" : "比较两条线段的长度，用短线段 ÷ 长线段 × 100%";
+        $("proportionInputLabel").textContent = isShape ? "短边 / 长边" : "短 / 长";
       }
 
       function newProportionQuestion(shouldFocus = true) {
         let next;
         do {
-          next = randomInt(20, 200);
+          next = randomInt(20, 100);
         } while (next === state.actual);
         state.actual = next;
+        state.swap = Math.random() < 0.5;
         state.orientation = Math.random() < 0.5 ? "horizontal" : "vertical";
+        state.angleA = randomInt(0, 159);
+        state.angleB = (state.angleA + randomInt(25, 155)) % 180;
+        state.drawing = false;
+        state.drawStart = null;
+        state.drawnLength = 0;
         state.answered = false;
         input.value = "";
         input.readOnly = false;
         input.removeAttribute("aria-invalid");
         $("proportionInputError").textContent = "";
-        $("proportionSubmitLabel").textContent = "提交判断";
+        $("proportionView").classList.toggle("is-drawing", state.mode === "draw");
+        $("proportionDrawingTask").hidden = state.mode !== "draw";
+        $("proportionTargetRatio").textContent = `${state.actual}%`;
+        $("proportionSubmitLabel").textContent = state.mode === "draw" ? "提交画作" : "提交判断";
         $("proportionFeedback").className = "feedback";
         $("proportionFeedbackIcon").textContent = "◎";
         $("proportionFeedbackTitle").textContent = "准备好就开始";
-        $("proportionFeedbackText").textContent = "提交后会显示实际比例和你的误差。";
+        $("proportionFeedbackText").textContent = state.mode === "draw" ? "画完线段后提交，会检查你画出的比例。" : "提交后会显示实际比例和你的误差。";
         $("proportionResult").hidden = true;
+        updateProportionPrompt();
         renderProportion();
         updateProportionStats();
-        if (shouldFocus && !window.matchMedia("(max-width: 600px)").matches) input.focus({ preventScroll: true });
+        if (shouldFocus && state.mode !== "draw" && !window.matchMedia("(max-width: 600px)").matches) {
+          input.focus({ preventScroll: true });
+        }
       }
 
       function showProportionResult(guess) {
@@ -1721,9 +1848,9 @@
         input.readOnly = true;
         $("proportionSubmitLabel").textContent = "下一题";
         $("proportionActualValue").textContent = `${state.actual}%`;
-        $("proportionErrorValue").textContent = `你的 ${formatValue(guess)}% · 相差 ${formatValue(error)}%`;
+        $("proportionErrorValue").textContent = `${state.mode === "draw" ? "你画的" : "你的"} ${formatValue(guess)}% · 相差 ${formatValue(error)}%`;
         $("proportionResult").hidden = false;
-        $("proportionSvgDesc").textContent += ` A 是 B 的 ${state.actual}%。`;
+        $("proportionSvgDesc").textContent += ` 正确比例为 ${state.actual}%。`;
 
         if (error === 0) {
           $("proportionFeedback").className = "feedback is-good";
@@ -1742,13 +1869,80 @@
           $("proportionFeedbackIcon").textContent = "!";
           $("proportionFeedbackTitle").textContent = "继续校准";
         }
-        $("proportionFeedbackText").textContent = error === 0
-          ? "判断完全准确，记住这两条线段的长度关系。"
-          : guess > state.actual
-            ? "你的判断偏大，A 实际上比你想的还要短一些。"
-            : "你的判断偏小，A 实际上比你想的还要长一些。";
+
+        if (error === 0) {
+          $("proportionFeedbackText").textContent = "判断完全准确，记住这个比例关系。";
+        } else if (state.mode === "draw") {
+          $("proportionFeedbackText").textContent = guess > state.actual ? "你画的线偏长了，下次可以稍微收短一点。" : "你画的线偏短了，下次可以稍微放长一点。";
+        } else {
+          $("proportionFeedbackText").textContent = guess > state.actual
+            ? "你的判断偏大，较小者实际占的比例更小。"
+            : "你的判断偏小，较小者实际占的比例更大。";
+        }
         updateProportionStats();
       }
+
+      function svgPoint(event) {
+        const point = svg.createSVGPoint();
+        point.x = event.clientX;
+        point.y = event.clientY;
+        return point.matrixTransform(svg.getScreenCTM().inverse());
+      }
+
+      function updateDrawing(point) {
+        const dx = point.x - state.drawStart.x;
+        const dy = point.y - state.drawStart.y;
+        state.drawnLength = Math.hypot(dx, dy);
+        setLine("proportionLineA", state.drawStart.x, state.drawStart.y, point.x, point.y);
+        setLabel("proportionLabelA", (state.drawStart.x + point.x) / 2, (state.drawStart.y + point.y) / 2 - 12);
+        $("proportionLineA").toggleAttribute("hidden", false);
+        $("proportionLabelA").toggleAttribute("hidden", false);
+        $("proportionDrawHint").toggleAttribute("hidden", true);
+      }
+
+      svg.addEventListener("pointerdown", (event) => {
+        if (state.mode !== "draw" || state.answered) return;
+        const point = svgPoint(event);
+        if (point.x < 300 || point.x > 640 || point.y < 0 || point.y > 380) return;
+        event.preventDefault();
+        state.drawing = true;
+        state.drawStart = point;
+        state.drawnLength = 0;
+        svg.setPointerCapture(event.pointerId);
+        updateDrawing(point);
+      });
+      svg.addEventListener("pointermove", (event) => {
+        if (!state.drawing || state.mode !== "draw" || state.answered) return;
+        event.preventDefault();
+        updateDrawing(svgPoint(event));
+      });
+      const finishDrawing = () => {
+        if (!state.drawing) return;
+        state.drawing = false;
+        if (state.drawnLength < 5) {
+          state.drawnLength = 0;
+          renderProportion();
+        }
+      };
+      svg.addEventListener("pointerup", finishDrawing);
+      svg.addEventListener("pointercancel", finishDrawing);
+
+      $("proportionRedrawButton").addEventListener("click", () => {
+        state.drawing = false;
+        state.drawnLength = 0;
+        $("proportionInputError").textContent = "";
+        renderProportion();
+      });
+      document.querySelectorAll("[data-proportion-mode]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.proportionMode === state.mode) return;
+          state.mode = button.dataset.proportionMode;
+          document.querySelectorAll("[data-proportion-mode]").forEach((item) => {
+            item.setAttribute("aria-pressed", String(item === button));
+          });
+          newProportionQuestion();
+        });
+      });
 
       input.addEventListener("input", () => {
         input.removeAttribute("aria-invalid");
@@ -1760,11 +1954,20 @@
           newProportionQuestion();
           return;
         }
+        if (state.mode === "draw") {
+          if (state.drawing || state.drawnLength < 5) {
+            $("proportionInputError").textContent = "请先在右侧空白处画出一条线";
+            return;
+          }
+          $("proportionInputError").textContent = "";
+          showProportionResult(Math.round(state.drawnLength / 160 * 1000) / 10);
+          return;
+        }
         const raw = input.value.trim();
         const guess = Number(raw);
-        if (raw === "" || !Number.isFinite(guess) || guess < 0 || guess > 300) {
+        if (raw === "" || !Number.isFinite(guess) || guess < 0 || guess > 100) {
           input.setAttribute("aria-invalid", "true");
-          $("proportionInputError").textContent = "请输入 0 到 300 之间的比例";
+          $("proportionInputError").textContent = "请输入 0 到 100 之间的比例";
           input.focus();
           return;
         }
