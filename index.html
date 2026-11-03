@@ -420,6 +420,8 @@
       flex: 1;
       min-width: 0;
       height: 285px;
+      position: relative;
+      overflow: hidden;
       border: 1px solid rgba(36, 48, 42, 0.1);
       border-radius: 14px;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
@@ -431,10 +433,25 @@
       flex: 0 0 84px;
       width: 84px;
     }
-    .lightness-step { display: grid; grid-template-columns: 27px 1fr; align-items: center; gap: 5px; color: var(--muted); font-size: 9px; }
+    .lightness-step { display: grid; grid-template-columns: 27px 1fr; align-items: center; gap: 5px; padding: 0; color: var(--muted); background: transparent; border: 0; border-radius: 4px; font-size: 9px; text-align: left; cursor: pointer; }
+    .lightness-step:hover { color: var(--ink); background: rgba(36, 48, 42, 0.05); }
     .lightness-step-color { height: 100%; min-height: 0; border: 1px solid rgba(36, 48, 42, 0.09); border-radius: 4px; }
     .lightness-step.is-actual { color: var(--ink); font-weight: 700; }
     .lightness-step.is-actual .lightness-step-color { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .lightness-step.is-selected .lightness-step-color { outline: 2px solid var(--ink); outline-offset: 1px; }
+    .swatch-compare-label {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      padding: 4px 7px;
+      color: #111;
+      background: rgba(255, 255, 255, 0.86);
+      border-radius: 6px;
+      font-size: 10px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      pointer-events: none;
+    }
+    .swatch-compare-label-right { right: 10px; left: auto; }
     .lightness-scale-wrap { margin: 0 22px 20px; }
     .lightness-scale {
       height: 10px;
@@ -799,7 +816,10 @@
           </div>
           <div class="color-display">
             <div class="lightness-answer-column" id="lightnessAnswerColumn" aria-label="同一色相下的明度参考答案" hidden></div>
-            <div class="value-swatch" id="targetSwatch" role="img" aria-label="待判断明度的目标颜色"></div>
+            <div class="value-swatch" id="targetSwatch" role="img" aria-label="待判断明度的目标颜色">
+              <span class="swatch-compare-label" id="originalColorLabel" hidden></span>
+              <span class="swatch-compare-label swatch-compare-label-right" id="compareColorLabel" hidden></span>
+            </div>
           </div>
           <div class="lightness-scale-wrap" aria-hidden="true">
             <div class="lightness-scale"></div>
@@ -1362,7 +1382,7 @@
     (() => {
       const $ = (id) => document.getElementById(id);
       const input = $("lightnessInput");
-      const state = { mode: "color", target: null, answered: false, total: 0, totalError: 0 };
+      const state = { mode: "color", target: null, comparison: null, answered: false, total: 0, totalError: 0 };
       const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
       const formatValue = (value) => Number.isInteger(value) ? String(value) : value.toFixed(1);
 
@@ -1380,7 +1400,11 @@
           l: randomInt(0, 100)
         };
         state.answered = false;
+        state.comparison = null;
+        $("targetSwatch").style.background = "";
         $("targetSwatch").style.backgroundColor = `hsl(${state.target.h}, ${state.target.s}%, ${state.target.l}%)`;
+        $("originalColorLabel").hidden = true;
+        $("compareColorLabel").hidden = true;
         $("targetSwatch").setAttribute("aria-label", "待判断明度的目标颜色");
         $("colorPromptTitle").textContent = isGray ? "这个灰色的明度是多少？" : "这个颜色的明度是多少？";
         $("colorPromptHint").textContent = isGray
@@ -1413,10 +1437,12 @@
         column.replaceChildren();
         const actualStep = Math.round(state.target.l / 10) * 10;
         for (let lightness = 0; lightness <= 100; lightness += 10) {
-          const row = document.createElement("div");
+          const row = document.createElement("button");
+          row.type = "button";
+          row.dataset.lightness = lightness;
           row.className = "lightness-step" + (lightness === actualStep ? " is-actual" : "");
-          row.setAttribute("role", "img");
-          row.setAttribute("aria-label", `明度 ${lightness}%${lightness === actualStep ? "，最接近答案" : ""}`);
+          row.setAttribute("aria-pressed", "false");
+          row.setAttribute("aria-label", `明度 ${lightness}%${lightness === actualStep ? "，最接近答案" : ""}，点击与原色对比`);
           const label = document.createElement("span");
           label.textContent = `${lightness}%`;
           const swatch = document.createElement("span");
@@ -1426,6 +1452,40 @@
           column.append(row);
         }
         column.hidden = false;
+      }
+
+      function clearComparison() {
+        state.comparison = null;
+        $("targetSwatch").style.background = "";
+        $("targetSwatch").style.backgroundColor = `hsl(${state.target.h}, ${state.target.s}%, ${state.target.l}%)`;
+        $("originalColorLabel").hidden = true;
+        $("compareColorLabel").hidden = true;
+        $("targetSwatch").setAttribute("aria-label", `目标颜色，实际 HSL 明度为 ${state.target.l}%`);
+        document.querySelectorAll(".lightness-step").forEach((button) => {
+          button.classList.remove("is-selected");
+          button.setAttribute("aria-pressed", "false");
+        });
+      }
+
+      function compareLightness(lightness) {
+        if (state.comparison === lightness) {
+          clearComparison();
+          return;
+        }
+        state.comparison = lightness;
+        const original = `hsl(${state.target.h}, ${state.target.s}%, ${state.target.l}%)`;
+        const reference = `hsl(${state.target.h}, ${state.target.s}%, ${lightness}%)`;
+        $("targetSwatch").style.background = `linear-gradient(90deg, ${original} 0%, ${original} 50%, ${reference} 50%, ${reference} 100%)`;
+        $("originalColorLabel").textContent = `原色 ${state.target.l}%`;
+        $("compareColorLabel").textContent = `对比 ${lightness}%`;
+        $("originalColorLabel").hidden = false;
+        $("compareColorLabel").hidden = false;
+        $("targetSwatch").setAttribute("aria-label", `左侧为原色，明度 ${state.target.l}%；右侧为对比色，明度 ${lightness}%`);
+        document.querySelectorAll(".lightness-step").forEach((button) => {
+          const selected = Number(button.dataset.lightness) === lightness;
+          button.classList.toggle("is-selected", selected);
+          button.setAttribute("aria-pressed", String(selected));
+        });
       }
 
       function showColorResult(guess) {
@@ -1439,7 +1499,8 @@
         $("lightnessErrorValue").textContent = `你的 ${formatValue(guess)}% · 相差 ${formatValue(error)}%`;
         $("colorResult").hidden = false;
         renderLightnessColumn();
-        $("targetSwatch").setAttribute("aria-label", `目标颜色，实际 HSL 明度为 ${state.target.l}%`);
+        clearComparison();
+        $("colorStageNote").textContent = "点击左侧明度色块，可与原色并排对比";
 
         if (error <= 2) {
           $("colorFeedback").className = "feedback is-good";
@@ -1465,6 +1526,12 @@
             : "你的判断偏低，这个颜色实际比你想象的更亮。";
         updateColorStats();
       }
+
+      $("lightnessAnswerColumn").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-lightness]");
+        if (!button || !state.answered) return;
+        compareLightness(Number(button.dataset.lightness));
+      });
 
       document.querySelectorAll("[data-color-mode]").forEach((button) => {
         button.addEventListener("click", () => {
