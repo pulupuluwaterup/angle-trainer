@@ -619,6 +619,10 @@
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="13" r="4" stroke="currentColor" stroke-width="1.5"/></svg>
         色感练习
       </button>
+      <button class="view-nav-button" type="button" data-view="proportion" aria-pressed="false">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 7H17M3 14H12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        比例练习
+      </button>
     </nav>
 
     <main class="workspace" id="practiceView">
@@ -862,6 +866,72 @@
           <p class="coach-title">明度小方法</p>
           <p class="coach-text" id="colorCoachText">先与黑白灰比较，再判断它靠近哪个灰阶。这里的明度使用 HSL 的 L 值，与饱和度是不同的概念。</p>
           <p class="color-stats-note" id="colorStatsNote">本轮 0 次 · 平均误差 —</p>
+        </div>
+      </aside>
+    </main>
+
+    <main class="workspace" id="proportionView" hidden>
+      <section class="practice-card" aria-labelledby="proportionPromptTitle">
+        <div class="toolbar">
+          <h2 class="answer-heading">长度比例</h2>
+          <span class="question-number" id="proportionQuestionNumber">第 1 题</span>
+        </div>
+        <div class="stage">
+          <div class="prompt">
+            <h2 id="proportionPromptTitle">A 是 B 的百分之多少？</h2>
+            <p>A 是目标线段，B 是参考线段；只比较它们的长度</p>
+          </div>
+          <svg class="angle-svg" id="proportionSvg" viewBox="0 0 640 380" role="img" aria-labelledby="proportionSvgTitle proportionSvgDesc">
+            <title id="proportionSvgTitle">线段长度比例练习</title>
+            <desc id="proportionSvgDesc">比较目标线段 A 与参考线段 B 的长度。</desc>
+            <line id="proportionLineA" class="ray" x1="140" y1="145" x2="300" y2="145" style="stroke: var(--accent);" vector-effect="non-scaling-stroke"/>
+            <line id="proportionLineB" class="ray" x1="140" y1="250" x2="300" y2="250" vector-effect="non-scaling-stroke"/>
+            <text id="proportionLabelA" class="svg-caption" x="102" y="151" text-anchor="middle">A</text>
+            <text id="proportionLabelB" class="svg-caption" x="102" y="256" text-anchor="middle">B</text>
+            <text id="proportionOrientationLabel" class="svg-caption" x="320" y="330" text-anchor="middle">横向长度比较</text>
+          </svg>
+          <div class="stage-note">先用眼睛找出一半、相等和两倍，再细调比例</div>
+        </div>
+      </section>
+
+      <aside class="answer-card">
+        <h2 class="answer-heading">你的判断</h2>
+        <p class="answer-subtitle">输入 A 相对于 B 的长度百分比</p>
+        <form id="proportionForm" novalidate>
+          <label class="input-label" for="proportionInput">A / B</label>
+          <div class="input-wrap">
+            <input class="degree-input" id="proportionInput" type="number" min="0" max="300" step="1" inputmode="decimal" autocomplete="off" placeholder="100" aria-describedby="proportionInputError">
+            <span class="degree-symbol" aria-hidden="true">%</span>
+          </div>
+          <div class="input-range" aria-hidden="true"><span>0%</span><span>300%</span></div>
+          <p class="input-error" id="proportionInputError" role="alert"></p>
+          <button class="submit-button" id="proportionSubmitButton" type="submit"><span id="proportionSubmitLabel">提交判断</span><span class="key-hint">Enter ↵</span></button>
+        </form>
+
+        <section class="stats" id="proportionStats" aria-label="比例练习统计">
+          <div class="stat"><span class="stat-label">已练习</span><span class="stat-value" id="proportionTotal">0</span><span class="stat-unit">题</span></div>
+          <div class="stat"><span class="stat-label">平均误差</span><span class="stat-value" id="proportionAverage">—</span><span class="stat-unit">%</span></div>
+          <div class="stat"><span class="stat-label">5% 内准确率</span><span class="stat-value" id="proportionAccuracy">—</span><span class="stat-unit">%</span></div>
+        </section>
+
+        <div class="feedback" id="proportionFeedback" aria-live="polite">
+          <div class="feedback-main">
+            <span class="feedback-icon" id="proportionFeedbackIcon" aria-hidden="true">◎</span>
+            <div>
+              <p class="feedback-title" id="proportionFeedbackTitle">准备好就开始</p>
+              <p class="feedback-text" id="proportionFeedbackText">提交后会显示实际比例和你的误差。</p>
+            </div>
+          </div>
+          <div class="actual-result" id="proportionResult" hidden>
+            <span class="actual-label">实际比例</span>
+            <strong class="actual-value" id="proportionActualValue">—</strong>
+            <span class="error-value" id="proportionErrorValue"></span>
+          </div>
+        </div>
+
+        <div class="coach-tip">
+          <p class="coach-title">比例小方法</p>
+          <p class="coach-text">先判断 A 更接近 B 的一半、一样长，还是两倍，再在相邻参照之间细调。误差不超过 5% 记为一次准确判断。</p>
         </div>
       </aside>
     </main>
@@ -1215,9 +1285,9 @@
   <script>
     (() => {
       const $ = (id) => document.getElementById(id);
-      const views = { practice: $("practiceView"), reference: $("referenceView"), color: $("colorView") };
-      const titles = { practice: "眼力练习", reference: "角度参考 · 眼力练习", color: "色感练习 · 眼力练习" };
-      const focusTargets = { practice: "answerInput", reference: "customAngleInput", color: "lightnessInput" };
+      const views = { practice: $("practiceView"), reference: $("referenceView"), color: $("colorView"), proportion: $("proportionView") };
+      const titles = { practice: "眼力练习", reference: "角度参考 · 眼力练习", color: "色感练习 · 眼力练习", proportion: "比例练习 · 眼力练习" };
+      const focusTargets = { practice: "answerInput", reference: "customAngleInput", color: "lightnessInput", proportion: "proportionInput" };
 
       function switchView(view) {
         document.body.classList.remove("is-entering", "is-question", "is-result");
@@ -1573,9 +1643,145 @@
   <script>
     (() => {
       const $ = (id) => document.getElementById(id);
+      const input = $("proportionInput");
+      const state = { actual: 0, orientation: "horizontal", answered: false, total: 0, totalError: 0, accurate: 0 };
+      const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+      const formatValue = (value) => Number.isInteger(value) ? String(value) : value.toFixed(1);
+
+      function updateProportionStats() {
+        $("proportionTotal").textContent = state.total;
+        $("proportionAverage").textContent = state.total ? formatValue(state.totalError / state.total) : "—";
+        $("proportionAccuracy").textContent = state.total ? Math.round(state.accurate / state.total * 100) : "—";
+        $("proportionQuestionNumber").textContent = `第 ${state.total + (state.answered ? 0 : 1)} 题`;
+      }
+
+      function setLine(id, x1, y1, x2, y2) {
+        const line = $(id);
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+      }
+
+      function renderProportion() {
+        const length = 160 * state.actual / 100;
+        if (state.orientation === "horizontal") {
+          setLine("proportionLineA", 140, 145, 140 + length, 145);
+          setLine("proportionLineB", 140, 250, 300, 250);
+          $("proportionLabelA").setAttribute("x", 102);
+          $("proportionLabelA").setAttribute("y", 151);
+          $("proportionLabelB").setAttribute("x", 102);
+          $("proportionLabelB").setAttribute("y", 256);
+          $("proportionOrientationLabel").setAttribute("x", 320);
+          $("proportionOrientationLabel").setAttribute("y", 330);
+          $("proportionOrientationLabel").textContent = "横向长度比较";
+        } else {
+          setLine("proportionLineA", 230, 330, 230, 330 - length);
+          setLine("proportionLineB", 410, 330, 410, 170);
+          $("proportionLabelA").setAttribute("x", 230);
+          $("proportionLabelA").setAttribute("y", 358);
+          $("proportionLabelB").setAttribute("x", 410);
+          $("proportionLabelB").setAttribute("y", 358);
+          $("proportionOrientationLabel").setAttribute("x", 320);
+          $("proportionOrientationLabel").setAttribute("y", 34);
+          $("proportionOrientationLabel").textContent = "竖向长度比较";
+        }
+        $("proportionSvgDesc").textContent = `${state.orientation === "horizontal" ? "横向" : "竖向"}线段，比较目标 A 与参考 B 的长度。`;
+      }
+
+      function newProportionQuestion(shouldFocus = true) {
+        let next;
+        do {
+          next = randomInt(20, 200);
+        } while (next === state.actual);
+        state.actual = next;
+        state.orientation = Math.random() < 0.5 ? "horizontal" : "vertical";
+        state.answered = false;
+        input.value = "";
+        input.readOnly = false;
+        input.removeAttribute("aria-invalid");
+        $("proportionInputError").textContent = "";
+        $("proportionSubmitLabel").textContent = "提交判断";
+        $("proportionFeedback").className = "feedback";
+        $("proportionFeedbackIcon").textContent = "◎";
+        $("proportionFeedbackTitle").textContent = "准备好就开始";
+        $("proportionFeedbackText").textContent = "提交后会显示实际比例和你的误差。";
+        $("proportionResult").hidden = true;
+        renderProportion();
+        updateProportionStats();
+        if (shouldFocus && !window.matchMedia("(max-width: 600px)").matches) input.focus({ preventScroll: true });
+      }
+
+      function showProportionResult(guess) {
+        const error = Math.abs(guess - state.actual);
+        state.total += 1;
+        state.totalError += error;
+        if (error <= 5) state.accurate += 1;
+        state.answered = true;
+        input.readOnly = true;
+        $("proportionSubmitLabel").textContent = "下一题";
+        $("proportionActualValue").textContent = `${state.actual}%`;
+        $("proportionErrorValue").textContent = `你的 ${formatValue(guess)}% · 相差 ${formatValue(error)}%`;
+        $("proportionResult").hidden = false;
+        $("proportionSvgDesc").textContent += ` A 是 B 的 ${state.actual}%。`;
+
+        if (error === 0) {
+          $("proportionFeedback").className = "feedback is-good";
+          $("proportionFeedbackIcon").textContent = "✓";
+          $("proportionFeedbackTitle").textContent = "完全命中！";
+        } else if (error <= 5) {
+          $("proportionFeedback").className = "feedback is-good";
+          $("proportionFeedbackIcon").textContent = "✓";
+          $("proportionFeedbackTitle").textContent = "比例感不错！";
+        } else if (error <= 10) {
+          $("proportionFeedback").className = "feedback is-warning";
+          $("proportionFeedbackIcon").textContent = "↗";
+          $("proportionFeedbackTitle").textContent = "已经很接近";
+        } else {
+          $("proportionFeedback").className = "feedback is-bad";
+          $("proportionFeedbackIcon").textContent = "!";
+          $("proportionFeedbackTitle").textContent = "继续校准";
+        }
+        $("proportionFeedbackText").textContent = error === 0
+          ? "判断完全准确，记住这两条线段的长度关系。"
+          : guess > state.actual
+            ? "你的判断偏大，A 实际上比你想的还要短一些。"
+            : "你的判断偏小，A 实际上比你想的还要长一些。";
+        updateProportionStats();
+      }
+
+      input.addEventListener("input", () => {
+        input.removeAttribute("aria-invalid");
+        $("proportionInputError").textContent = "";
+      });
+      $("proportionForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (state.answered) {
+          newProportionQuestion();
+          return;
+        }
+        const raw = input.value.trim();
+        const guess = Number(raw);
+        if (raw === "" || !Number.isFinite(guess) || guess < 0 || guess > 300) {
+          input.setAttribute("aria-invalid", "true");
+          $("proportionInputError").textContent = "请输入 0 到 300 之间的比例";
+          input.focus();
+          return;
+        }
+        input.removeAttribute("aria-invalid");
+        $("proportionInputError").textContent = "";
+        showProportionResult(guess);
+      });
+      newProportionQuestion(false);
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
       const mobile = window.matchMedia("(max-width: 600px)");
       const viewport = window.visualViewport;
-      const inputs = ["answerInput", "customAngleInput", "lightnessInput"].map((id) => document.getElementById(id));
+      const inputs = ["answerInput", "customAngleInput", "lightnessInput", "proportionInput"].map((id) => document.getElementById(id));
       let activeInput = null;
 
       function scrollToGraphic() {
@@ -1659,14 +1865,14 @@
         });
       });
 
-      document.querySelectorAll("#answerForm, #customAngleForm, #colorForm").forEach((form) => {
+      document.querySelectorAll("#answerForm, #customAngleForm, #colorForm, #proportionForm").forEach((form) => {
         form.addEventListener("submit", () => {
           setTimeout(() => {
             const input = form.querySelector('input[type="number"]');
             const hasError = input.getAttribute("aria-invalid") === "true" ||
               (form.id === "customAngleForm" && document.getElementById("customAngleError").textContent !== "");
             if (hasError) return;
-            const isAnswerForm = form.id === "answerForm" || form.id === "colorForm";
+            const isAnswerForm = form.id === "answerForm" || form.id === "colorForm" || form.id === "proportionForm";
             if (isAnswerForm && input.readOnly) {
               input.blur();
               enterResultMode();
@@ -1684,7 +1890,8 @@
         if (event.key !== "Enter" || event.repeat || event.isComposing) return;
         const candidates = [
           { view: $("practiceView"), input: $("answerInput"), result: $("actualResult"), button: $("submitButton") },
-          { view: $("colorView"), input: $("lightnessInput"), result: $("colorResult"), button: $("colorSubmitButton") }
+          { view: $("colorView"), input: $("lightnessInput"), result: $("colorResult"), button: $("colorSubmitButton") },
+          { view: $("proportionView"), input: $("proportionInput"), result: $("proportionResult"), button: $("proportionSubmitButton") }
         ];
         const current = candidates.find((item) => !item.view.hidden);
         if (!current || !current.input.readOnly || current.result.hidden) return;
