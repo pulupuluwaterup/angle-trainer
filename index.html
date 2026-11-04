@@ -467,6 +467,36 @@
     .drawing-task p { margin: 0 0 8px; color: var(--muted); font-size: 11px; line-height: 1.6; }
     #proportionView.is-drawing .numeric-only { display: none; }
     #proportionView.is-drawing #proportionSvg { touch-action: none; cursor: crosshair; }
+    .proportion-draw-area { position: relative; }
+    .proportion-slider {
+      position: absolute;
+      left: 15.625%;
+      top: 50%;
+      z-index: 2;
+      width: 68.75%;
+      height: 32px;
+      margin: 0;
+      background: transparent;
+      transform: translateY(-50%);
+      appearance: none;
+      -webkit-appearance: none;
+      touch-action: none;
+    }
+    .proportion-slider::-webkit-slider-runnable-track { height: 4px; background: var(--ink); border-radius: 4px; }
+    .proportion-slider::-webkit-slider-thumb {
+      width: 20px;
+      height: 20px;
+      margin-top: -8px;
+      background: var(--accent);
+      border: 3px solid var(--paper);
+      border-radius: 50%;
+      box-shadow: 0 1px 5px rgba(36, 48, 42, 0.2);
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .proportion-slider::-moz-range-track { height: 4px; background: var(--ink); border-radius: 4px; }
+    .proportion-slider::-moz-range-thumb { width: 14px; height: 14px; background: var(--accent); border: 3px solid var(--paper); border-radius: 50%; }
+    .proportion-slider:disabled { opacity: 0.75; }
 
     @keyframes reveal {
       from { opacity: 0; }
@@ -893,11 +923,12 @@
             <h2 id="proportionPromptTitle">短线段是长线段的百分之多少？</h2>
             <p id="proportionPromptHint">比较两条线段的长度，用短线段 ÷ 长线段 × 100%</p>
           </div>
-          <svg class="angle-svg" id="proportionSvg" viewBox="0 0 640 380" role="img" aria-labelledby="proportionSvgTitle proportionSvgDesc">
+          <div class="proportion-draw-area">
+            <svg class="angle-svg" id="proportionSvg" viewBox="0 0 640 380" role="img" aria-labelledby="proportionSvgTitle proportionSvgDesc">
             <title id="proportionSvgTitle">线段长度比例练习</title>
             <desc id="proportionSvgDesc">比较两条线段中短线段与长线段的长度比例。</desc>
             <rect id="proportionShape" x="210" y="120" width="220" height="140" rx="5" fill="#eeeee7" stroke="#c5c8bf" stroke-width="2" vector-effect="non-scaling-stroke" hidden/>
-            <text id="proportionDrawHint" class="svg-caption" x="320" y="145" text-anchor="middle" hidden>在线段上点击一点</text>
+            <text id="proportionDrawHint" class="svg-caption" x="320" y="145" text-anchor="middle" hidden>拖动滑条选择位置</text>
             <text id="proportionDrawStart" class="svg-caption" x="100" y="240" text-anchor="middle" hidden>0%</text>
             <text id="proportionDrawEnd" class="svg-caption" x="540" y="240" text-anchor="middle" hidden>100%</text>
             <circle id="proportionMarker" cx="100" cy="190" r="7" fill="#df6842" stroke="#fffefa" stroke-width="3" vector-effect="non-scaling-stroke" hidden/>
@@ -910,6 +941,8 @@
             <text id="proportionLabelB" class="svg-caption" x="102" y="256" text-anchor="middle">B</text>
             <text id="proportionOrientationLabel" class="svg-caption" x="320" y="330" text-anchor="middle">横向长度比较</text>
           </svg>
+            <input class="proportion-slider" id="proportionSlider" type="range" min="0" max="100" step="0.1" value="0" aria-label="拖动选择比例位置" hidden>
+          </div>
           <div class="stage-note">先用眼睛找出一半、相等和两倍，再细调比例</div>
         </div>
       </section>
@@ -920,8 +953,8 @@
         <div class="drawing-task" id="proportionDrawingTask" hidden>
           <span>目标比例</span>
           <strong id="proportionTargetRatio">50%</strong>
-          <p>点击或轻触线段上的位置来标记目标比例，可以重复点选。</p>
-          <button class="clear-list-button" id="proportionRedrawButton" type="button">重新选点</button>
+          <p>拖动与参考线等长的滑条来选择比例位置，可以随时重置。</p>
+          <button class="clear-list-button" id="proportionRedrawButton" type="button">重置滑条</button>
         </div>
         <form id="proportionForm" novalidate>
           <label class="input-label numeric-only" id="proportionInputLabel" for="proportionInput">短 / 长</label>
@@ -1691,6 +1724,7 @@
       const $ = (id) => document.getElementById(id);
       const input = $("proportionInput");
       const svg = $("proportionSvg");
+      const slider = $("proportionSlider");
       const state = {
         mode: "parallel", actual: 0, swap: false, orientation: "horizontal",
         angleA: 0, angleB: 90, answered: false, total: 0, totalError: 0, accurate: 0,
@@ -1730,12 +1764,12 @@
         const isDraw = state.mode === "draw";
         $("proportionShape").toggleAttribute("hidden", !isShape);
         $("proportionLineA").toggleAttribute("hidden", isDraw);
-        $("proportionLineB").toggleAttribute("hidden", false);
+        $("proportionLineB").toggleAttribute("hidden", isDraw);
         $("proportionLabelA").toggleAttribute("hidden", isDraw);
         $("proportionLabelB").toggleAttribute("hidden", isDraw);
         $("proportionDrawStart").toggleAttribute("hidden", !isDraw);
         $("proportionDrawEnd").toggleAttribute("hidden", !isDraw);
-        $("proportionMarker").toggleAttribute("hidden", !isDraw || !state.marked);
+        $("proportionMarker").toggleAttribute("hidden", true);
         $("proportionMarkerLabel").toggleAttribute("hidden", true);
         $("proportionAnswerMarker").toggleAttribute("hidden", true);
         $("proportionAnswerLabel").toggleAttribute("hidden", true);
@@ -1764,7 +1798,7 @@
 
         if (isDraw) {
           setLine("proportionLineB", 100, 190, 540, 190);
-          setOrientationLabel("点击线段选点", 115);
+          setOrientationLabel("拖动滑条选比例", 115);
           if (state.marked) {
             $("proportionMarker").setAttribute("cx", 100 + state.drawnLength);
             $("proportionMarker").setAttribute("cy", 190);
@@ -1814,7 +1848,7 @@
           : isDraw ? `请在线段上标出 ${state.actual}% 的位置` : "短线段是长线段的百分之多少？";
         $("proportionPromptHint").textContent = isShape
           ? "比较两条高亮邻边，用短边 ÷ 长边 × 100%"
-          : isDraw ? "点击或轻触线段即可选点，不需要自己画线"
+          : isDraw ? "拖动与线段等长的滑条，选择比例位置"
             : state.mode === "random" ? "两条线方向不同，仍然只比较实际长度" : "比较两条线段的长度，用短线段 ÷ 长线段 × 100%";
         $("proportionInputLabel").textContent = isShape ? "短边 / 长边" : "短 / 长";
       }
@@ -1838,6 +1872,9 @@
         $("proportionInputError").textContent = "";
         $("proportionView").classList.toggle("is-drawing", state.mode === "draw");
         $("proportionDrawingTask").hidden = state.mode !== "draw";
+        slider.hidden = state.mode !== "draw";
+        slider.disabled = false;
+        slider.value = 0;
         $("proportionTargetRatio").textContent = `${state.actual}%`;
         $("proportionSubmitLabel").textContent = state.mode === "draw" ? "提交选点" : "提交判断";
         $("proportionFeedback").className = "feedback";
@@ -1865,6 +1902,7 @@
         $("proportionErrorValue").textContent = `${state.mode === "draw" ? "你点的" : "你的"} ${formatValue(guess)}% · 相差 ${formatValue(error)}%`;
         $("proportionResult").hidden = false;
         if (state.mode === "draw") {
+          slider.disabled = true;
           const selectedX = 100 + state.drawnLength;
           const answerX = 100 + 440 * state.actual / 100;
           $("proportionMarkerLabel").setAttribute("x", selectedX);
@@ -1909,24 +1947,10 @@
         updateProportionStats();
       }
 
-      function svgPoint(event) {
-        const point = svg.createSVGPoint();
-        point.x = event.clientX;
-        point.y = event.clientY;
-        return point.matrixTransform(svg.getScreenCTM().inverse());
-      }
-
-      svg.addEventListener("pointerdown", (event) => {
+      slider.addEventListener("input", () => {
         if (state.mode !== "draw" || state.answered) return;
-        const point = svgPoint(event);
-        if (point.x < 90 || point.x > 550 || point.y < 130 || point.y > 250) return;
-        event.preventDefault();
-        const x = Math.max(100, Math.min(540, point.x));
-        state.drawnLength = x - 100;
         state.marked = true;
-        $("proportionMarker").setAttribute("cx", x);
-        $("proportionMarker").setAttribute("cy", 190);
-        $("proportionMarker").toggleAttribute("hidden", false);
+        state.drawnLength = 440 * Number(slider.value) / 100;
         $("proportionDrawHint").toggleAttribute("hidden", true);
         $("proportionInputError").textContent = "";
       });
@@ -1934,6 +1958,7 @@
       $("proportionRedrawButton").addEventListener("click", () => {
         state.drawnLength = 0;
         state.marked = false;
+        slider.value = 0;
         $("proportionInputError").textContent = "";
         renderProportion();
       });
@@ -1960,11 +1985,11 @@
         }
         if (state.mode === "draw") {
           if (!state.marked) {
-            $("proportionInputError").textContent = "请先在线段上标记一个点";
+            $("proportionInputError").textContent = "请先拖动滑条选择位置";
             return;
           }
           $("proportionInputError").textContent = "";
-          showProportionResult(Math.round(state.drawnLength / 440 * 1000) / 10);
+          showProportionResult(Math.round(Number(slider.value) * 10) / 10);
           return;
         }
         const raw = input.value.trim();
