@@ -1752,7 +1752,7 @@
       const svg = $("proportionSvg");
       const slider = $("proportionSlider");
       const state = {
-        mode: "parallel", actual: 0, swap: false, orientation: "horizontal",
+        mode: "parallel", actual: 0, longLength: 160, swap: false, orientation: "horizontal",
         angleA: 0, angleB: 90, answered: false, total: 0, totalError: 0, accurate: 0,
         drawnLength: 0, marked: false
       };
@@ -1802,7 +1802,7 @@
         $("proportionDrawHint").toggleAttribute("hidden", !isDraw || state.marked);
 
         if (isShape) {
-          const longSide = 220;
+          const longSide = state.longLength;
           const shortSide = longSide * state.actual / 100;
           const width = state.swap ? shortSide : longSide;
           const height = state.swap ? longSide : shortSide;
@@ -1833,9 +1833,9 @@
           return;
         }
 
-        const shortLength = 160 * state.actual / 100;
-        const lengthA = state.swap ? shortLength : 160;
-        const lengthB = state.swap ? 160 : shortLength;
+        const shortLength = state.longLength * state.actual / 100;
+        const lengthA = state.swap ? shortLength : state.longLength;
+        const lengthB = state.swap ? state.longLength : shortLength;
         if (state.mode === "random") {
           const drawRay = (id, cx, cy, angle, length) => {
             const radians = angle * Math.PI / 180;
@@ -1885,6 +1885,7 @@
           next = randomInt(20, 100);
         } while (next === state.actual);
         state.actual = next;
+        state.longLength = randomInt(130, 210);
         state.swap = Math.random() < 0.5;
         state.orientation = Math.random() < 0.5 ? "horizontal" : "vertical";
         state.angleA = randomInt(0, 159);
@@ -2149,12 +2150,12 @@
         const candidates = [
           { view: $("practiceView"), input: $("answerInput"), result: $("actualResult"), button: $("submitButton") },
           { view: $("colorView"), input: $("lightnessInput"), result: $("colorResult"), button: $("colorSubmitButton") },
-          { view: $("proportionView"), input: $("proportionInput"), result: $("proportionResult"), button: $("proportionSubmitButton") }
+          { view: $("proportionView"), input: $("proportionInput"), result: $("proportionResult"), button: $("proportionSubmitButton"), slider: $("proportionSlider") }
         ];
         const current = candidates.find((item) => !item.view.hidden);
         if (!current || !current.input.readOnly || current.result.hidden) return;
         const active = document.activeElement;
-        if (active !== document.body && active !== current.input && active !== current.button) return;
+        if (active !== document.body && active !== current.input && active !== current.button && active !== current.slider) return;
         event.preventDefault();
         current.button.click();
       });
